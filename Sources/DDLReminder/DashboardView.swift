@@ -320,16 +320,11 @@ struct DeadlineRow: View {
     private var urgent: Bool { item.hasTime && !item.completed && item.dueDate.timeIntervalSince(store.now) < 86400 }
     var body: some View {
         HStack(spacing: 13) {
-            if store.isCodexDisplay(item) {
-                Image(systemName: "doc.text").font(.system(size: 20)).foregroundStyle(.secondary)
-                    .frame(width: 20).accessibilityLabel(store.t("只读附加条目", "Read-only entry"))
-            } else {
             Button { store.toggle(item) } label: {
                 Image(systemName: item.completed ? "checkmark.circle.fill" : "circle").font(.system(size: 20))
                     .foregroundStyle(item.completed ? Palette.accent : Color.secondary.opacity(0.45))
             }.buttonStyle(.plain).help(item.completed ? store.t("重新设为待办", "Mark incomplete") : store.t("标记为已完成", "Mark complete"))
                 .accessibilityLabel(item.completed ? store.t("重新设为待办", "Mark incomplete") : store.t("标记为已完成", "Mark complete"))
-            }
             Button(action: onDetail) {
                 HStack {
                     VStack(alignment: .leading, spacing: 7) {

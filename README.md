@@ -95,7 +95,7 @@ SwiftUI · macOS 13+ · 中文 / English · MIT
 
 **由你决定任务：**Outlook 窗口只展示从邮件提取的候选日期，不与现有日历任务比较，也不自动去重、合并或更新。你查看邮件原文和现有任务后，自行勾选要新增的候选；内容更新时也作为新条目添加，原条目保留。重复导入同一邮件也会再次显示候选，由你决定是否添加。
 
-**Codex 附加条目：**只有你明确选定要新增的任务后，本机 Codex 才可将这些字段写成 JSON，并运行 `python3 scripts/codex_append.py /path/to/approved.json`。输入格式为 `{"items":[{"title":"Homework 1","course":"CIE6007","dueAt":"2026-10-19T23:59:00+08:00","hasTime":true,"notes":"邮件原文摘要"}]}`；仅日期填写 `YYYY-MM-DD` 并设 `hasTime:false`。脚本只向独立的 `CodexDeadlines.jsonl` 追加新行，不读取、修改或删除 App 与日历的任务数据。内容更新时追加更新后的条目，原条目仍保留。拾期只读取并显示这些附加条目，也会为其安排提醒；是否重复、哪条有效由你人工判断。
+**Codex 附加条目：**你可以要求本机 Codex 将邮件记录全部加入 App，而不在 Codex 里逐条选择。Codex 将每封邮件的任务字段写成 JSON，并运行 `python3 scripts/codex_append.py /path/to/items.json`。输入格式为 `{"items":[{"title":"Homework 1","course":"CIE6007","dueAt":"2026-10-19T23:59:00+08:00","hasTime":true,"notes":"邮件原文摘要","link":"https://outlook.office365.com/..."}]}`；仅日期填写 `YYYY-MM-DD` 并设 `hasTime:false`。脚本只向独立的 `CodexDeadlines.jsonl` 追加新行，不读取、修改或删除原有 App 与日历任务。内容更新时追加更新后的条目，旧条目保留。拾期显示所有条目并安排提醒；你在 App 中决定是否重复，可标记完成、编辑或删除。你的操作另存于 `CodexUserEdits.json`，Codex 不修改该文件。
 
 ### 开启与调整提醒
 
@@ -284,7 +284,7 @@ Scanning runs only when requested, reads at most 300 inbox messages from the las
 
 **You decide what to add:** The Outlook window shows dates extracted from mail without comparing them with existing calendar tasks or automatically deduplicating, merging, or updating tasks. Review the original message and current tasks, then select the candidates to add. Add revised content as a new entry; the old entry remains. Importing the same mail again shows its candidates again.
 
-**Codex entries:** After you explicitly select entries to add, a local Codex session can create a JSON file in the format shown above and run `python3 scripts/codex_append.py /path/to/approved.json`. The script appends new lines to a separate `CodexDeadlines.jsonl` file. It never reads, changes, or removes the app's existing tasks or calendar data. Revised content is appended as a new entry; the old entry remains. Shiqi reads and displays these entries and schedules reminders. You decide whether entries are duplicates and which one is valid.
+**Codex entries:** You can ask a local Codex session to add all mail records to Shiqi without selecting each one in Codex. Codex writes the fields shown above and runs `python3 scripts/codex_append.py /path/to/items.json`. The script appends one record per item to `CodexDeadlines.jsonl`; it never reads, changes, or removes existing app or calendar tasks. Revised content becomes a new entry, leaving the old entry intact. Shiqi displays every entry and schedules reminders. In the app, you decide whether entries are duplicates and can mark them complete, edit, or delete them. Your actions are stored separately in `CodexUserEdits.json`, which Codex does not modify.
 
 ### Enable and configure reminders
 

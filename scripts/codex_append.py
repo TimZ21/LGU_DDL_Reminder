@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Append only the deadline entries explicitly chosen by the user.
+"""Append each supplied deadline as a separate entry for the user to manage in the app.
 
 Input: {"items": [{"title": "...", "course": "...", "dueAt": "2026-10-19T23:59:00+08:00",
                    "hasTime": true, "notes": "..."}]}
@@ -36,7 +36,7 @@ def deadline(item: dict, zone: ZoneInfo) -> dict:
     notes = item.get("notes", "")
     if not isinstance(notes, str):
         raise ValueError("notes must be text")
-    return {
+    result = {
         "id": "codex:" + str(uuid.uuid4()),
         "title": title,
         "course": course,
@@ -46,6 +46,12 @@ def deadline(item: dict, zone: ZoneInfo) -> dict:
         "source": "outlook",
         "completed": False,
     }
+    link = item.get("link")
+    if link is not None:
+        if not isinstance(link, str) or not link.startswith("https://"):
+            raise ValueError("link must be an HTTPS URL")
+        result["link"] = link
+    return result
 
 
 def main() -> None:

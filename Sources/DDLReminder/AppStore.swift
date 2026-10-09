@@ -30,6 +30,8 @@ final class AppStore: ObservableObject {
     private var canPersist = true
     private var wakeObserver: NSObjectProtocol?
     private var codexModifiedAt: Date?
+    private var codexEditsModifiedAt: Date?
+    private var codexEdits = CodexUserEdits()
 
     init() {
         if isDemo { loadDemo(); return }
@@ -154,6 +156,12 @@ final class AppStore: ObservableObject {
         } catch { errorMessage = error.localizedDescription }
     }
     func toggle(_ item: Deadline) {
+        if isCodexDisplay(item) {
+            var updated = item
+            updated.completed.toggle()
+            saveCodexUserChange(updated)
+            return
+        }
         guard let i = snapshot.deadlines.firstIndex(where: { $0.id == item.id }) else { return }
         snapshot.deadlines[i].completed.toggle(); save(); reschedule()
     }
@@ -169,6 +177,7 @@ final class AppStore: ObservableObject {
         save(); reschedule()
     }
     func upsert(_ item: Deadline) {
+        if isCodexDisplay(item) { saveCodexUserChange(item); return }
         if let index = snapshot.deadlines.firstIndex(where: { $0.id == item.id }) { snapshot.deadlines[index] = item }
         else { snapshot.deadlines.append(item) }
         save(); reschedule()
@@ -183,16 +192,39 @@ final class AppStore: ObservableObject {
         notice = t("已添加你选中的 \(candidates.count) 个截止日期。", "Added the \(candidates.count) deadlines you selected.")
     }
     func reloadCodexDisplay() {
-        guard !isDemo, CodexDisplay.modifiedAt != codexModifiedAt else { return }
+        guard !isDemo, CodexDisplay.modifiedAt != codexModifiedAt || CodexDisplay.editsModifiedAt != codexEditsModifiedAt else { return }
         do {
-            codexDeadlines = try CodexDisplay.load()
+            let base = try CodexDisplay.load()
+            let edits = try CodexDisplay.loadEdits()
+            codexDeadlines = base.filter { !edits.hidden.contains($0.id) }.map { edits.replacements[$0.id] ?? $0 }
+            codexEdits = edits
             codexModifiedAt = CodexDisplay.modifiedAt
+            codexEditsModifiedAt = CodexDisplay.editsModifiedAt
             if started { reschedule() }
         } catch {
             errorMessage = t("无法读取 Codex 附加任务文件。", "Could not read the Codex display file.")
         }
     }
-    func delete(_ item: Deadline) { snapshot.deadlines.removeAll { $0.id == item.id }; save(); reschedule() }
+    private func saveCodexUserChange(_ item: Deadline) {
+        codexEdits.replacements[item.id] = item
+        do {
+            try CodexDisplay.saveEdits(codexEdits)
+            codexEditsModifiedAt = nil
+            reloadCodexDisplay()
+        } catch { errorMessage = t("Codex 条目修改未能保存。", "Could not save the Codex entry change.") }
+    }
+    func delete(_ item: Deadline) {
+        if isCodexDisplay(item) {
+            codexEdits.hidden.insert(item.id)
+            do {
+                try CodexDisplay.saveEdits(codexEdits)
+                codexEditsModifiedAt = nil
+                reloadCodexDisplay()
+            } catch { errorMessage = t("Codex 条目删除未能保存。", "Could not save the Codex entry deletion.") }
+            return
+        }
+        snapshot.deadlines.removeAll { $0.id == item.id }; save(); reschedule()
+    }
     func updatePreferences(_ value: Preferences) {
         guard value != snapshot.preferences else { return }
         snapshot.preferences = value; save(); reschedule()
