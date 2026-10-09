@@ -1,0 +1,22 @@
+.build/
+.swiftpm/
+dist/
+.DS_Store
+*.xcuserstate
+
+# Local configuration, diagnostics, and private calendar data
+.env
+.env.*
+!.env.example
+!.env.template
+*.log
+deadlines.json
+deadlines.backup.json
+private/
+.local/
+
+# Local signing credentials
+*.p12
+*.pfx
+*.key
+*.mobileprovision

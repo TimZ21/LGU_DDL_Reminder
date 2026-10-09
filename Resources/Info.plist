@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+    <key>CFBundleIdentifier</key><string>cn.shuning.ddlreminder</string>
+    <key>CFBundleExecutable</key><string>DDLReminder</string>
+    <key>CFBundleName</key><string>拾期</string>
+    <key>CFBundleDisplayName</key><string>拾期</string>
+    <key>CFBundleVersion</key><string>4</string>
+    <key>CFBundleShortVersionString</key><string>1.1.2</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleIconFile</key><string>AppIcon</string>
+    <key>LSMinimumSystemVersion</key><string>13.0</string>
+    <key>NSHighResolutionCapable</key><true/>
+    <key>NSPrincipalClass</key><string>NSApplication</string>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSExceptionDomains</key>
+        <dict>
+            <key>bb.cuhk.edu.cn</key>
+            <dict>
+                <!-- Verified with nscurl: this server needs RSA cipher compatibility. -->
+                <key>NSExceptionRequiresForwardSecrecy</key><false/>
+                <key>NSExceptionMinimumTLSVersion</key><string>TLSv1.2</string>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key><false/>
+                <key>NSIncludesSubdomains</key><false/>
+            </dict>
+        </dict>
+    </dict>
+    <key>NSHumanReadableCopyright</key><string>拾期 · DDL Reminder</string>
+</dict></plist>

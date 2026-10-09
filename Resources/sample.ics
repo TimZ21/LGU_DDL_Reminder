@@ -1,0 +1,18 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//DDLReminder//Sample Calendar//ZH
+X-WR-TIMEZONE:Asia/Shanghai
+BEGIN:VEVENT
+UID:sample-homework-001
+SUMMARY:示例作业 · 这是测试数据
+DTSTART;TZID=Asia/Shanghai:20261012T235900
+CATEGORIES:示例课程
+DESCRIPTION:此文件仅供测试。真实截止日期请连接自己的 Blackboard 日历。
+END:VEVENT
+BEGIN:VEVENT
+UID:sample-date-only-002
+SUMMARY:示例项目 · 具体时间未设置
+DTSTART;VALUE=DATE:20261015
+CATEGORIES:示例课程
+END:VEVENT
+END:VCALENDAR

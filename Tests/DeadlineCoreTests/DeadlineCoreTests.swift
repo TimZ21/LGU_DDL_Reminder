@@ -1,0 +1,348 @@
+import Foundation
+#if canImport(XCTest)
+import XCTest
+#endif
+import DeadlineCore
+
+final class DeadlineCoreTests: XCTestCase {
+    let zone = TimeZone(identifier: "Asia/Shanghai")!
+    func date(_ value: String) -> Date { ISO8601DateFormatter().date(from: value)! }
+    func feed(_ body: String) -> String { "BEGIN:VCALENDAR\r\nVERSION:2.0\r\n" + body + "\r\nEND:VCALENDAR" }
+    func event(_ body: String) -> String { "BEGIN:VEVENT\r\n" + body + "\r\nEND:VEVENT" }
+
+    func testUTCConvertsToBeijingWithoutShiftingInstant() throws {
+        let result = try ICalendarParser().parse(feed(event("UID:a\r\nSUMMARY:Homework\r\nDTSTART:20261009T155900Z")))
+        XCTAssertEqual(result.deadlines[0].dueDate, date("2026-10-09T23:59:00+08:00"))
+        XCTAssertTrue(result.deadlines[0].hasTime)
+    }
+    func testTZIDAndFloatingDate() throws {
+        let body = event("UID:a\r\nDTSTART;TZID=Asia/Hong_Kong:20261009T235900") + "\r\n" + event("UID:b\r\nDTSTART:20261009T235900")
+        let result = try ICalendarParser().parse(feed(body), defaultTimeZone: zone)
+        XCTAssertEqual(result.deadlines.map(\.dueDate), [date("2026-10-09T23:59:00+08:00"), date("2026-10-09T23:59:00+08:00")])
+    }
+    func testAllDayNeverInventsMidnightDeadline() throws {
+        let result = try ICalendarParser().parse(feed(event("UID:all\r\nDTSTART;VALUE=DATE:20261009")))
+        let item = result.deadlines[0]
+        XCTAssertFalse(item.hasTime)
+        XCTAssertFalse(item.isOverdue(at: date("2026-10-09T23:59:00+08:00"), timeZone: zone))
+        XCTAssertTrue(item.isOverdue(at: date("2026-10-10T00:00:00+08:00"), timeZone: zone))
+        let plans = ReminderPlanner.plans(for: [item], preferences: Preferences(), now: date("2026-10-07T00:00:00+08:00"))
+        XCTAssertEqual(plans.map(\.fireDate), [date("2026-10-08T09:00:00+08:00"), date("2026-10-09T09:00:00+08:00")])
+        XCTAssertTrue(plans.allSatisfy { $0.subtitle.contains("待确认") })
+    }
+    func testFoldedUnicodeAndEscapesAndIgnoresAlarmDates() throws {
+        let body = "UID:a\r\nSUMMARY:作业\\,第三\r\n 次\\;概率论\r\nDESCRIPTION:第一行\\n第二行\\\\路径\r\nDTSTART:20261009T155900Z\r\nBEGIN:VALARM\r\nDTSTART:20260101T000000Z\r\nEND:VALARM"
+        let result = try ICalendarParser().parse(feed(event(body)))
+        XCTAssertEqual(result.deadlines[0].title, "作业,第三次;概率论")
+        XCTAssertEqual(result.deadlines[0].notes, "第一行\n第二行\\路径")
+        XCTAssertEqual(result.deadlines[0].dueDate, date("2026-10-09T15:59:00Z"))
+    }
+    func testDueOverridesStartForTodo() throws {
+        let body = "BEGIN:VTODO\r\nUID:a\r\nSUMMARY:Essay\r\nDTSTART:20261001T120000Z\r\nDUE:20261009T120000Z\r\nEND:VTODO"
+        let result = try ICalendarParser().parse(feed(body))
+        XCTAssertEqual(result.deadlines[0].dueDate, date("2026-10-09T12:00:00Z"))
+    }
+    func testCancelledAndEmptyFeedAreValid() throws {
+        XCTAssertTrue(try ICalendarParser().parse(feed("")).deadlines.isEmpty)
+        let result = try ICalendarParser().parse(feed(event("UID:a\r\nDTSTART:20261009T120000Z\r\nSTATUS:CANCELLED")))
+        XCTAssertTrue(result.deadlines.isEmpty)
+    }
+    func testMalformedResponseDoesNotLookLikeEmptyCalendar() {
+        XCTAssertThrowsError(try ICalendarParser().parse("<html>Please sign in</html>"))
+        XCTAssertThrowsError(try ICalendarParser().parse("BEGIN:VCALENDAR\nBEGIN:VEVENT\nEND:VCALENDAR"))
+    }
+    func testUnknownTimezoneAndInvalidDateAreFlagged() throws {
+        let result = try ICalendarParser().parse(feed(event("UID:a\r\nDTSTART;TZID=Unknown/Zone:20261009T235900") + "\r\n" + event("UID:b\r\nDTSTART:20260230T235900")))
+        XCTAssertTrue(result.deadlines.isEmpty)
+        XCTAssertEqual(result.warnings.count, 2)
+        XCTAssertEqual(Set(result.protectedPrefixes), Set(["blackboard:a", "blackboard:b"]))
+    }
+    func testWeeklyRecurrenceExdatesAndMovedOverride() throws {
+        let base = event("UID:repeat\r\nSUMMARY:Weekly\r\nDTSTART;TZID=Asia/Shanghai:20261005T180000\r\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;COUNT=4\r\nEXDATE;TZID=Asia/Shanghai:20261007T180000")
+        let moved = event("UID:repeat\r\nSUMMARY:Moved\r\nRECURRENCE-ID;TZID=Asia/Shanghai:20261012T180000\r\nDTSTART;TZID=Asia/Shanghai:20261013T190000")
+        let result = try ICalendarParser().parse(feed(base + "\r\n" + moved), now: date("2026-10-01T00:00:00Z"))
+        XCTAssertEqual(result.deadlines.map(\.dueDate), [date("2026-10-05T18:00:00+08:00"), date("2026-10-13T19:00:00+08:00"), date("2026-10-14T18:00:00+08:00")])
+        XCTAssertEqual(result.deadlines.count, 3)
+        XCTAssertTrue(result.warnings.isEmpty)
+    }
+    func testCancelledRecurrenceOverrideRemovesOnlyOneOccurrence() throws {
+        let base = event("UID:repeat\r\nDTSTART:20261005T180000Z\r\nRRULE:FREQ=DAILY;COUNT=3")
+        let cancelled = event("UID:repeat\r\nRECURRENCE-ID:20261006T180000Z\r\nDTSTART:20261006T180000Z\r\nSTATUS:CANCELLED")
+        let result = try ICalendarParser().parse(feed(base + "\r\n" + cancelled), now: date("2026-10-01T00:00:00Z"))
+        XCTAssertEqual(result.deadlines.count, 2)
+        XCTAssertFalse(result.deadlines.contains { $0.dueDate == date("2026-10-06T18:00:00Z") })
+    }
+    func testRecurrencePreservesLocalHourAcrossDST() throws {
+        let body = "UID:dst\r\nDTSTART;TZID=America/New_York:20261031T180000\r\nRRULE:FREQ=DAILY;COUNT=3"
+        let result = try ICalendarParser().parse(feed(event(body)), now: date("2026-10-30T00:00:00Z"))
+        XCTAssertEqual(result.deadlines.map(\.dueDate), [date("2026-10-31T22:00:00Z"), date("2026-11-01T23:00:00Z"), date("2026-11-02T23:00:00Z")])
+    }
+    func testUnsupportedRecurrenceIsVisibleWarning() throws {
+        let result = try ICalendarParser().parse(feed(event("UID:monthly\r\nDTSTART:20261001T180000Z\r\nRRULE:FREQ=MONTHLY;BYSETPOS=-1")))
+        XCTAssertTrue(result.deadlines.isEmpty)
+        XCTAssertEqual(result.warnings.count, 1)
+        XCTAssertEqual(result.protectedPrefixes, ["blackboard:monthly"])
+    }
+    func testReminderOffsetsCompletionAndNoPastAlerts() {
+        let now = date("2026-10-09T00:00:00Z")
+        let item = Deadline(title: "Homework", dueDate: now.addingTimeInterval(7200))
+        let plans = ReminderPlanner.plans(for: [item], preferences: Preferences(), now: now)
+        XCTAssertEqual(plans.count, 2)
+        XCTAssertEqual(plans.map(\.fireDate), [now.addingTimeInterval(5400), now.addingTimeInterval(7200)])
+        var done = item; done.completed = true
+        XCTAssertTrue(ReminderPlanner.plans(for: [done], preferences: Preferences(), now: now).isEmpty)
+        var off = Preferences(); off.notificationsEnabled = false
+        XCTAssertTrue(ReminderPlanner.plans(for: [item], preferences: off, now: now).isEmpty)
+    }
+    func testMergeRemovesDeletedPreservesCompletionAfterRescheduleAndProtectsFailures() {
+        let due = date("2026-10-09T00:00:00Z")
+        let completed = Deadline(id: "blackboard:one", title: "One", dueDate: due, source: .blackboard, completed: true)
+        let removed = Deadline(id: "blackboard:removed", title: "Removed", dueDate: due, source: .blackboard)
+        let failed = Deadline(id: "blackboard:failed", title: "Failed", dueDate: due, source: .blackboard)
+        let manual = Deadline(title: "Manual", dueDate: due)
+        var fresh = completed; fresh.completed = false
+        let parsed = ParsedCalendar(deadlines: [fresh], warnings: ["failure"], protectedPrefixes: ["blackboard:failed"])
+        let merged = DeadlineMerger.merge(previous: [completed, removed, failed, manual], parsed: parsed, source: .blackboard)
+        XCTAssertEqual(merged.count, 3)
+        XCTAssertTrue(merged.first { $0.id == completed.id }!.completed)
+        XCTAssertTrue(merged.contains { $0.id == manual.id })
+        fresh.dueDate = due.addingTimeInterval(3600)
+        let changed = DeadlineMerger.merge(previous: [completed], parsed: ParsedCalendar(deadlines: [fresh], warnings: [], protectedPrefixes: []), source: .blackboard)
+        XCTAssertTrue(changed[0].completed)
+        XCTAssertEqual(changed[0].dueDate, fresh.dueDate)
+    }
+    func testAddressValidationAndWebcalUpgrade() throws {
+        XCTAssertEqual(try FeedAddress.validate("webcal://bb.cuhk.edu.cn/calendar/feed.ics").scheme, "https")
+        for invalid in ["https://bb.cuhk.edu.cn", "http://bb.cuhk.edu.cn/a.ics", "https://name:password@bb.cuhk.edu.cn/a.ics", "file:///tmp/a.ics"] {
+            XCTAssertThrowsError(try FeedAddress.validate(invalid))
+        }
+    }
+
+    func testReimportWithRegeneratedUIDsPreservesCompletionAndSuppressesReminders() throws {
+        let now = date("2026-10-09T00:00:00Z")
+        func calendar(_ revision: String) -> String {
+            feed(event("UID:past-\(revision)\r\nSUMMARY:Past assignment\r\nCATEGORIES:CSC1000\r\nDTSTART:20261008T120000Z\r\nDESCRIPTION:Revision \(revision)") + "\r\n" +
+                 event("UID:future-\(revision)\r\nSUMMARY:Future assignment\r\nCATEGORIES:CSC1000\r\nDTSTART:20261012T120000Z\r\nDESCRIPTION:Revision \(revision)") + "\r\n" +
+                 event("UID:pending-\(revision)\r\nSUMMARY:Pending assignment\r\nCATEGORIES:CSC1000\r\nDTSTART:20261013T120000Z"))
+        }
+        let parser = ICalendarParser()
+        var saved = Snapshot()
+        saved.deadlines = try parser.parse(calendar("first"), now: now).deadlines
+        for index in saved.deadlines.indices where saved.deadlines[index].title != "Pending assignment" {
+            saved.deadlines[index].completed = true
+        }
+        // Round-trip saved data as the app does when restarted, then import a new export.
+        let restored = try JSONDecoder().decode(Snapshot.self, from: JSONEncoder().encode(saved))
+        let incoming = try parser.parse(calendar("second"), now: now)
+        XCTAssertTrue(Set(restored.deadlines.map(\.id)).isDisjoint(with: incoming.deadlines.map(\.id)))
+        let merged = DeadlineMerger.merge(previous: restored.deadlines, parsed: incoming, source: .blackboard)
+        XCTAssertEqual(merged.count, 3)
+        XCTAssertEqual(merged.filter(\.completed).map(\.title), ["Past assignment", "Future assignment"])
+        XCTAssertEqual(merged.filter { !$0.completed }.map(\.title), ["Pending assignment"])
+        XCTAssertTrue(merged.filter { !$0.completed && $0.isOverdue(at: now, timeZone: zone) }.isEmpty)
+        XCTAssertTrue(merged.first { $0.title == "Future assignment" }!.notes.contains("second"))
+        let plans = ReminderPlanner.plans(for: merged, preferences: Preferences(), now: now)
+        XCTAssertTrue(plans.allSatisfy { $0.deadline.title == "Pending assignment" })
+        XCTAssertEqual(plans.count, 4)
+    }
+
+    func testUIDLessExportMetadataChangesKeepLocalCompletion() throws {
+        let now = date("2026-10-09T00:00:00Z")
+        let parser = ICalendarParser()
+        let first = feed(event("SUMMARY:Homework\r\nCATEGORIES:Math\r\nDTSTART:20261012T120000Z\r\nDTSTAMP:20261009T000000Z\r\nDESCRIPTION:Old notes"))
+        let second = feed(event("DTSTAMP:20261009T010000Z\r\nSUMMARY:Homework\r\nCATEGORIES:Math\r\nDTSTART:20261012T120000Z\r\nDESCRIPTION:Updated notes"))
+        var previous = try parser.parse(first, now: now).deadlines
+        previous[0].completed = true
+        let incoming = try parser.parse(second, now: now)
+        XCTAssertFalse(previous[0].id == incoming.deadlines[0].id)
+        let merged = DeadlineMerger.merge(previous: previous, parsed: incoming, source: .blackboard)
+        XCTAssertTrue(merged[0].completed)
+        XCTAssertEqual(merged[0].notes, "Updated notes")
+    }
+
+    func testFileReimportsPreserveCompletionAndKeepUnrelatedTasks() throws {
+        let now = date("2026-10-09T00:00:00Z")
+        func calendar(_ uid: String) -> String {
+            feed(event("UID:\(uid)\r\nSUMMARY:Imported homework\r\nCATEGORIES:Math\r\nDTSTART:20261012T120000Z"))
+        }
+        let parser = ICalendarParser()
+        var previous = try parser.parse(calendar("old"), source: .file, now: now).deadlines
+        previous[0].completed = true
+        let unrelated = Deadline(id: "file:another-course", title: "Other course", dueDate: date("2026-10-13T12:00:00Z"), source: .file)
+        let manual = Deadline(title: "Manual", dueDate: date("2026-10-14T12:00:00Z"), completed: true)
+        previous += [unrelated, manual]
+        let incoming = try parser.parse(calendar("new"), source: .file, now: now)
+        let merged = DeadlineMerger.merge(previous: previous, parsed: incoming, source: .file, removeMissing: false)
+        XCTAssertEqual(merged.count, 3)
+        XCTAssertTrue(merged.first { $0.title == "Imported homework" }!.completed)
+        XCTAssertTrue(merged.contains(unrelated))
+        XCTAssertTrue(merged.contains(manual))
+        XCTAssertFalse(merged.contains { $0.id == "file:old" })
+    }
+
+    func testFileAndSubscriptionImportsShareCompletionWithoutDuplicates() throws {
+        let now = date("2026-10-09T00:00:00Z")
+        func calendar(_ uid: String, title: String = "Shared homework") -> String {
+            feed(event("UID:\(uid)\r\nSUMMARY:\(title)\r\nCATEGORIES:Math\r\nDTSTART:20261012T120000Z"))
+        }
+        let parser = ICalendarParser()
+        for uid in ["original", "regenerated"] {
+            var previous = try parser.parse(calendar("original"), now: now).deadlines
+            previous[0].completed = true
+            // A manual item with the same content is a separate user-created task.
+            let manual = Deadline(title: previous[0].title, course: previous[0].course, dueDate: previous[0].dueDate)
+            let incoming = try parser.parse(calendar(uid), source: .file, now: now)
+            let merged = DeadlineMerger.merge(previous: previous + [manual], parsed: incoming, source: .file, removeMissing: false)
+            XCTAssertEqual(merged.count, 2)
+            XCTAssertTrue(merged.contains(manual))
+            let synced = merged.first { $0.source == .blackboard }!
+            XCTAssertTrue(synced.completed)
+            XCTAssertEqual(synced.id, previous[0].id)
+        }
+        var file = try parser.parse(calendar("original"), source: .file, now: now).deadlines
+        file[0].completed = true
+        // Stable UID matching also keeps completion when the source updates task text.
+        let incoming = try parser.parse(calendar("original", title: "Updated homework"), now: now)
+        let merged = DeadlineMerger.merge(previous: file, parsed: incoming, source: .blackboard)
+        XCTAssertEqual(merged.count, 1)
+        XCTAssertEqual(merged[0].source, .blackboard)
+        XCTAssertEqual(merged[0].title, "Updated homework")
+        XCTAssertTrue(merged[0].completed)
+    }
+
+    func testCompletionMatchingKeepsRecurrencesAndAmbiguousTasksSeparate() throws {
+        let now = date("2026-10-09T00:00:00Z")
+        let parser = ICalendarParser()
+        let recurring = feed(event("UID:weekly\r\nSUMMARY:Weekly homework\r\nDTSTART:20261012T120000Z\r\nRRULE:FREQ=WEEKLY;COUNT=2"))
+        let incoming = try parser.parse(recurring, now: now)
+        var previous = incoming.deadlines
+        previous[0].completed = true
+        let merged = DeadlineMerger.merge(previous: previous, parsed: incoming, source: .blackboard)
+        XCTAssertTrue(merged[0].completed)
+        XCTAssertFalse(merged[1].completed)
+        XCTAssertEqual(Set(ReminderPlanner.plans(for: merged, preferences: Preferences(), now: now).map { $0.deadline.id }), [merged[1].id])
+
+        let due = date("2026-10-12T12:00:00Z")
+        let ambiguous = [Deadline(id: "blackboard:a", title: "Homework", course: "Math", dueDate: due, source: .blackboard, completed: true),
+                         Deadline(id: "blackboard:b", title: "Homework", course: "Math", dueDate: due, source: .blackboard)]
+        let fresh = [Deadline(id: "blackboard:c", title: "Homework", course: "Math", dueDate: due, source: .blackboard),
+                     Deadline(id: "blackboard:d", title: "Homework", course: "Math", dueDate: due, source: .blackboard)]
+        let result = DeadlineMerger.merge(previous: ambiguous, parsed: ParsedCalendar(deadlines: fresh, warnings: [], protectedPrefixes: []), source: .blackboard)
+        XCTAssertEqual(result.count, 2)
+        XCTAssertTrue(result.allSatisfy { !$0.completed })
+        // A newly added duplicate must not steal completion from an exact-ID match.
+        let withNew = DeadlineMerger.merge(previous: [ambiguous[0]], parsed: ParsedCalendar(deadlines: [ambiguous[0], fresh[0]], warnings: [], protectedPrefixes: []), source: .blackboard)
+        XCTAssertTrue(withNew.first { $0.id == "blackboard:a" }!.completed)
+        XCTAssertFalse(withNew.first { $0.id == "blackboard:c" }!.completed)
+    }
+
+    func testExplicitlyMarkingIncompleteSurvivesAnotherUIDChange() throws {
+        let now = date("2026-10-09T00:00:00Z")
+        func calendar(_ uid: String) -> String {
+            feed(event("UID:\(uid)\r\nSUMMARY:Homework\r\nDTSTART:20261012T120000Z"))
+        }
+        let parser = ICalendarParser()
+        var previous = try parser.parse(calendar("first"), now: now).deadlines
+        previous[0].completed = true
+        var merged = DeadlineMerger.merge(previous: previous, parsed: try parser.parse(calendar("second"), now: now), source: .blackboard)
+        XCTAssertTrue(merged[0].completed)
+        merged[0].completed = false
+        var saved = Snapshot(); saved.deadlines = merged
+        let restored = try JSONDecoder().decode(Snapshot.self, from: JSONEncoder().encode(saved))
+        let next = DeadlineMerger.merge(previous: restored.deadlines, parsed: try parser.parse(calendar("third"), now: now), source: .blackboard)
+        XCTAssertFalse(next[0].completed)
+        XCTAssertEqual(ReminderPlanner.plans(for: next, preferences: Preferences(), now: now).count, 4)
+    }
+
+    func testLegacySavedPreferencesMigrateWithoutLosingTasks() throws {
+        var original = Snapshot()
+        original.preferences.syncMinutes = 30
+        original.preferences.reminderMinutes = [60, 0]
+        original.preferences.notificationsEnabled = false
+        original.lastSync = date("2026-10-09T06:00:00Z")
+        original.deadlines = [Deadline(id: "blackboard:existing", title: "已有作业", course: "CSC3100",
+                                       dueDate: date("2026-10-12T15:59:00Z"), source: .blackboard, completed: true)]
+        var json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(original)) as! [String: Any]
+        var oldPreferences = json["preferences"] as! [String: Any]
+        oldPreferences.removeValue(forKey: "language"); json["preferences"] = oldPreferences
+        var loaded = try JSONDecoder().decode(Snapshot.self, from: JSONSerialization.data(withJSONObject: json))
+        XCTAssertEqual(loaded.deadlines, original.deadlines)
+        XCTAssertEqual(loaded.lastSync, original.lastSync)
+        XCTAssertEqual(loaded.preferences, original.preferences)
+        XCTAssertEqual(loaded.preferences.language, .chinese)
+        loaded.preferences.language = .english
+        let restarted = try JSONDecoder().decode(Snapshot.self, from: JSONEncoder().encode(loaded))
+        XCTAssertEqual(restarted.preferences.language, .english)
+        XCTAssertEqual(restarted.deadlines, original.deadlines)
+        XCTAssertEqual(restarted.preferences.reminderMinutes, [60, 0])
+        XCTAssertFalse(restarted.preferences.notificationsEnabled)
+    }
+
+    func testLanguageChangePreservesReminderInstantsAndIdentifiers() {
+        let now = date("2026-10-09T00:00:00Z")
+        let items = [Deadline(title: "作业 Homework", dueDate: date("2026-10-12T15:59:00Z")),
+                     Deadline(title: "Project", dueDate: date("2026-10-14T00:00:00+08:00"), hasTime: false)]
+        var preferences = Preferences()
+        let chinese = ReminderPlanner.plans(for: items, preferences: preferences, now: now)
+        preferences.language = .english
+        let english = ReminderPlanner.plans(for: items, preferences: preferences, now: now)
+        XCTAssertEqual(chinese.map(\.id), english.map(\.id))
+        XCTAssertEqual(chinese.map(\.fireDate), english.map(\.fireDate))
+        XCTAssertEqual(chinese.map(\.deadline), english.map(\.deadline))
+        XCTAssertTrue(english.contains { $0.subtitle == "Due in 1 day" })
+        XCTAssertTrue(english.contains { $0.subtitle == "Due today · Time to confirm" })
+        XCTAssertTrue(english.contains { $0.subtitle == "Deadline reached" })
+    }
+
+    func testShenzhenLabelKeepsExistingTimeZoneAndDates() {
+        var preferences = Preferences()
+        XCTAssertEqual(preferences.timeZone.identifier, "Asia/Shanghai")
+        XCTAssertEqual(preferences.timeZoneLabel, "深圳 (UTC+8)")
+        preferences.language = .english
+        XCTAssertEqual(preferences.timeZoneLabel, "Shenzhen (UTC+8)")
+        XCTAssertEqual(preferences.timeZone.secondsFromGMT(for: date("2026-10-09T00:00:00Z")), 28800)
+        let formatter = DateFormatter(); formatter.locale = preferences.language.locale
+        formatter.timeZone = preferences.timeZone
+        formatter.dateFormat = preferences.language.datePattern("yyyy年M月d日 EEEE HH:mm:ss")
+        XCTAssertEqual(formatter.string(from: date("2026-10-09T15:59:00Z")), "Friday, 9 October 2026 23:59:00")
+    }
+
+    func testEnglishParserKeepsOriginalCourseContentAndLocalizesErrors() throws {
+        let valid = event("UID:one\r\nSUMMARY:第三次作业\r\nCATEGORIES:概率论\r\nDTSTART:20261009T155900Z")
+        let invalid = event("UID:bad\r\nSUMMARY:Check time\r\nDTSTART;TZID=Unknown/Zone:20261009T235900")
+        let result = try ICalendarParser(language: .english).parse(feed(valid + "\r\n" + invalid))
+        XCTAssertEqual(result.deadlines[0].title, "第三次作业")
+        XCTAssertEqual(result.deadlines[0].course, "概率论")
+        XCTAssertEqual(result.deadlines[0].dueDate, date("2026-10-09T15:59:00Z"))
+        XCTAssertTrue(result.warnings[0].contains("Unsupported time zone"))
+        XCTAssertEqual(result.protectedPrefixes, ["blackboard:bad"])
+    }
+
+    static var allTests = [
+        ("UTC → 北京时间", testUTCConvertsToBeijingWithoutShiftingInstant),
+        ("TZID / 无时区日期", testTZIDAndFloatingDate),
+        ("仅日期事项与提醒", testAllDayNeverInventsMidnightDeadline),
+        ("多行中文与转义", testFoldedUnicodeAndEscapesAndIgnoresAlarmDates),
+        ("VTODO DUE", testDueOverridesStartForTodo),
+        ("取消与空日历", testCancelledAndEmptyFeedAreValid),
+        ("登录页面与截断文件", testMalformedResponseDoesNotLookLikeEmptyCalendar),
+        ("错误时区与无效日期", testUnknownTimezoneAndInvalidDateAreFlagged),
+        ("重复事项与改期", testWeeklyRecurrenceExdatesAndMovedOverride),
+        ("取消单次重复事项", testCancelledRecurrenceOverrideRemovesOnlyOneOccurrence),
+        ("夏令时转换", testRecurrencePreservesLocalHourAcrossDST),
+        ("不支持的重复规则", testUnsupportedRecurrenceIsVisibleWarning),
+        ("提醒时刻与完成状态", testReminderOffsetsCompletionAndNoPastAlerts),
+        ("同步合并与改期", testMergeRemovesDeletedPreservesCompletionAfterRescheduleAndProtectsFailures),
+        ("订阅链接验证", testAddressValidationAndWebcalUpgrade),
+        ("UID 变化后保留完成状态和提醒", testReimportWithRegeneratedUIDsPreservesCompletionAndSuppressesReminders),
+        ("无 UID 导出的元数据变化", testUIDLessExportMetadataChangesKeepLocalCompletion),
+        ("文件重导入保留完成状态", testFileReimportsPreserveCompletionAndKeepUnrelatedTasks),
+        ("文件与在线导入共享完成状态", testFileAndSubscriptionImportsShareCompletionWithoutDuplicates),
+        ("重复事项与歧义任务隔离", testCompletionMatchingKeepsRecurrencesAndAmbiguousTasksSeparate),
+        ("手动恢复待办后再次同步", testExplicitlyMarkingIncompleteSurvivesAnotherUIDChange),
+        ("旧版数据与语言设置迁移", testLegacySavedPreferencesMigrateWithoutLosingTasks),
+        ("语言切换保留提醒时刻", testLanguageChangePreservesReminderInstantsAndIdentifiers),
+        ("深圳标签与实际时区", testShenzhenLabelKeepsExistingTimeZoneAndDates),
+        ("英文解析提示保留课程内容", testEnglishParserKeepsOriginalCourseContentAndLocalizesErrors)
+    ]
+}
