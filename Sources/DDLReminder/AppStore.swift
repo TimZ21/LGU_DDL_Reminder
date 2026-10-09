@@ -17,6 +17,7 @@ final class AppStore: ObservableObject {
     @Published var showConnection = false
     @Published var showSettings = false
     @Published var showEditor = false
+    @Published var showOutlook = false
     @Published var editingDeadline: Deadline?
     let isDemo = ProcessInfo.processInfo.arguments.contains("--demo") || Bundle.main.object(forInfoDictionaryKey: "DDLDemoMode") as? Bool == true
     private let notifications = NotificationService()
@@ -151,6 +152,14 @@ final class AppStore: ObservableObject {
         if let index = snapshot.deadlines.firstIndex(where: { $0.id == item.id }) { snapshot.deadlines[index] = item }
         else { snapshot.deadlines.append(item) }
         save(); reschedule()
+    }
+    func importOutlook(_ candidates: [MailDeadlineCandidate]) {
+        var count = 0
+        for candidate in candidates where !snapshot.deadlines.contains(where: { $0.id == candidate.id }) {
+            snapshot.deadlines.append(candidate.deadline()); count += 1
+        }
+        save(); reschedule()
+        notice = t("已从 Outlook 添加 \(count) 个截止日期。", "Added \(count) deadlines from Outlook.")
     }
     func delete(_ item: Deadline) { snapshot.deadlines.removeAll { $0.id == item.id }; save(); reschedule() }
     func updatePreferences(_ value: Preferences) {

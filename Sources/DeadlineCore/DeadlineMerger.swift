@@ -19,7 +19,8 @@ public enum DeadlineMerger {
     public static func merge(previous: [Deadline], parsed: ParsedCalendar, source: DeadlineSource,
                              removeMissing: Bool = true) -> [Deadline] {
         let eligible = previous.indices.filter {
-            previous[$0].source == source || (source != .manual && previous[$0].source != .manual)
+            previous[$0].source == source ||
+            ([.blackboard, .file].contains(source) && [.blackboard, .file].contains(previous[$0].source))
         }
         let byID = Dictionary(grouping: eligible, by: { previous[$0].id })
         let byCalendarID = Dictionary(grouping: eligible.filter { calendarID(previous[$0]) != nil },
@@ -78,7 +79,7 @@ public enum DeadlineMerger {
     }
 
     private static func calendarID(_ item: Deadline) -> String? {
-        guard item.source != .manual else { return nil }
+        guard item.source == .blackboard || item.source == .file else { return nil }
         let prefix = item.source.rawValue + ":"
         guard item.id.hasPrefix(prefix) else { return nil }
         return String(item.id.dropFirst(prefix.count))

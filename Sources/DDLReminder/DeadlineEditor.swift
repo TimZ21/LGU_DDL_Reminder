@@ -42,7 +42,8 @@ struct DeadlineEditor: View {
         let due = hasTime ? date : calendar.startOfDay(for: date)
         let new = Deadline(id: item?.id ?? UUID().uuidString, title: title.trimmingCharacters(in: .whitespacesAndNewlines),
                            course: course.trimmingCharacters(in: .whitespacesAndNewlines), notes: notes,
-                           dueDate: due, hasTime: hasTime, source: .manual, completed: item?.completed ?? false)
+                           dueDate: due, hasTime: hasTime, source: item?.source ?? .manual,
+                           link: item?.link, completed: item?.completed ?? false)
         store.upsert(new); dismiss()
     }
 }
@@ -76,7 +77,7 @@ struct DeadlineDetailView: View {
                     .font(.caption).foregroundStyle(.secondary)
                 HStack {
                     Button(item.completed ? store.t("设为待办", "Mark incomplete") : store.t("标记已完成", "Mark complete")) { store.toggle(item) }.buttonStyle(PrimaryButtonStyle())
-                    if item.source == .manual {
+                    if item.source == .manual || item.source == .outlook {
                         Button(store.t("编辑", "Edit")) { showEdit = true }
                         Button(store.t("删除", "Delete"), role: .destructive) { confirmDelete = true }
                     } else {
@@ -85,9 +86,9 @@ struct DeadlineDetailView: View {
                         }
                     }
                     Spacer()
-                    if let link = item.link { Link(store.t("在 Blackboard 查看", "View in Blackboard"), destination: link) }
+                    if let link = item.link { Link(item.source == .outlook ? store.t("在 Outlook 查看", "View in Outlook") : store.t("在 Blackboard 查看", "View in Blackboard"), destination: link) }
                 }
-                if item.source != .manual {
+                if item.source != .manual && item.source != .outlook {
                     Text(store.t("课程名称可在本机补填，自动同步后仍会保留。若时间缺失或发布在公告中，可手动添加一个 DDL。", "You can label the course locally; it stays after sync. Add a manual deadline when the time is missing or only listed in announcements."))
                         .font(.caption).foregroundStyle(.secondary)
                 }
@@ -101,7 +102,7 @@ struct DeadlineDetailView: View {
             }
     }
     private func sourceName(_ source: DeadlineSource) -> String {
-        switch source { case .blackboard: return store.t("Blackboard 自动同步", "Synced from Blackboard"); case .file: return store.t("日历文件（不会自动更新）", "Calendar file (no automatic updates)"); case .manual: return store.t("手动添加", "Added manually") }
+        switch source { case .blackboard: return store.t("Blackboard 自动同步", "Synced from Blackboard"); case .file: return store.t("日历文件（不会自动更新）", "Calendar file (no automatic updates)"); case .manual: return store.t("手动添加", "Added manually"); case .outlook: return store.t("Outlook 邮件", "Outlook mail") }
     }
 }
 

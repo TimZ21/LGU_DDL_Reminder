@@ -22,6 +22,7 @@ SwiftUI · macOS 13+ · 中文 / English · MIT
 - **清晰的日期与时间**：按日期分组，详情显示星期、时分秒和时区；支持即将截止、未来 7 天、已逾期、已完成及搜索。
 - **系统提醒**：默认提前 24 小时、3 小时、30 分钟，以及到期时提醒，可在设置中调整。
 - **补充遗漏的 DDL**：支持手动添加和 `.ics` 文件导入；文件导入后不会自动更新。
+- **Outlook 邮件候选**：可导入从 Outlook 下载的 `.eml` 邮件，在本机提取候选 DDL，核对后再添加；拥有 Microsoft Entra 应用注册权限时，也可用 Microsoft Graph 只读授权扫描最近 180 天的收件箱。
 - **本地完成状态**：完成后取消相关未来提醒；再次同步、重导入或已识别事项改期时保留完成状态，只有手动恢复待办才会取消完成。来源删除或取消的事项会在同步后移除。
 - **中英双语与紫金主题**：语言即时切换并自动保存，界面与后续通知使用所选语言；课程标题与备注保留来源原文。
 
@@ -84,6 +85,14 @@ SwiftUI · macOS 13+ · 中文 / English · MIT
 
 **共享链接可能含个人访问令牌，可访问你的日历。不要放进公开 Issue、截图、日志或 Git 仓库。**
 
+### 从 Outlook 邮件补充 DDL
+
+**无需管理员权限的方式：**在 Outlook 网页版打开相关邮件，点击邮件右上角「更多操作 → 下载」，取得 `.eml` 文件（若下载为 `.msg`，该格式目前不支持）。在拾期点击信封图标或侧栏「Outlook 邮件」，选择「导入 Outlook 邮件文件（.eml）」。应用会在本机解析邮件并列出候选日期；逐条核对课程、日期和时刻，再勾选添加。[微软的邮件下载说明](https://support.microsoft.com/en-us/outlook/mail/save-an-outlook-message-as-a-eml-file-a-pdf-file-or-as-a-draft)
+
+**可选的直接扫描：**若学校允许你在 Microsoft Entra 注册应用，创建公共客户端应用，启用 **Allow public client flows**，添加 Microsoft Graph 的 **Mail.Read（Delegated）** 权限。把 **Application (client) ID** 填到拾期的 Outlook 窗口；可选填 **Directory (tenant) ID**。点击「获取微软授权码」，在微软登录页面输入代码并完成授权，然后点击「扫描收件箱」。学校可能禁用应用注册或要求管理员批准；此时使用 `.eml` 导入即可。不要把 Client Secret、邮箱密码或授权令牌粘贴到应用中。[微软的应用注册说明](https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app)
+
+扫描只在点击时执行，不会后台持续读取。拾期最多查看最近 180 天、前 300 封收件箱邮件，不读取附件，也不发送或修改邮件。候选内容在本机分析，只有选中的 DDL 会保存；授权令牌保存在 macOS 钥匙串。日期未写具体时刻时标注「时间待确认」。邮件正文中的日期识别可能遗漏或误判，添加前请核对原文。
+
 ### 开启与调整提醒
 
 1. 点击「开启提醒」，在 macOS 提示中允许通知。
@@ -104,6 +113,7 @@ SwiftUI · macOS 13+ · 中文 / English · MIT
 | 补填课程 | 日历未提供课程时，点击任务行 →「设置课程」；课程标注保存在本机，同步后保留 |
 | 标记完成 | 点击任务左侧圆圈，或在详情中标记完成；状态仅保存在本机 |
 | 导入日历文件 | 点击主窗口右上角导入图标，选择小于 5 MB 的 UTF-8 `.ics` 文件 |
+| 导入 Outlook 邮件 | 点击信封图标 → 导入 `.eml`；确认候选后添加 |
 | 手动同步 | 点击「立即同步」，或使用菜单栏的同步按钮 |
 | 管理订阅 | 点击「管理连接」；更换链接或断开连接 |
 
@@ -117,10 +127,11 @@ SwiftUI · macOS 13+ · 中文 / English · MIT
 
 ### 数据范围与隐私
 
-- 拾期读取 Blackboard 日历订阅中的全部事项，可能包括作业、考试、上课时间与个人事件。仅写在公告、PDF、邮件或课程说明中的 DDL，需要手动补充。
+- 拾期读取 Blackboard 日历订阅中的全部事项，可能包括作业、考试、上课时间与个人事件。仅写在公告、PDF 或课程说明中的 DDL，需要手动补充；邮件中的日期可通过 Outlook 邮件窗口导入并核对。
 - 订阅链接保存在 **macOS 钥匙串**。软件不读取或保存学校密码；应用内登录使用临时 WebKit 会话，不持久化登录 cookie。
 - 任务、完成状态和设置保存在 `~/Library/Application Support/DDLReminder/deadlines.json`；上一次保存的内容备份为同目录下的 `deadlines.backup.json`。备份课程数据时也应保护这些文件。
 - 应用直接向日历服务器发起请求，不使用自建云端服务。HTTPS 重定向仅允许同一主机。
+- Outlook 直接扫描使用微软登录与 Microsoft Graph；拾期不获取学校密码，不将邮件正文上传到项目服务器。ChatGPT/Codex 的 Outlook 连接与拾期的 Graph 授权彼此独立，不能共用令牌。
 
 支持 UTC、IANA 时区、无时区日期、仅日期事项、VEVENT/VTODO、折行与转义、取消事件、每日/每周重复、EXDATE、RDATE 和单次重复事件改期。不支持的复杂重复规则或自定义 VTIMEZONE 会明确提示；请核对提示并手动补充，不保证支持所有 iCalendar 扩展。
 
@@ -196,6 +207,7 @@ This is an independently developed, free and open-source project, not an officia
 - **Clear dates and times:** events grouped by date; details include the weekday, seconds, and time zone. Filter upcoming, next 7 days, overdue, or completed items, and search your tasks.
 - **System reminders:** alerts 24 hours, 3 hours, and 30 minutes before a deadline, and at the deadline, with configurable reminder times.
 - **Add missing deadlines:** create tasks manually or import `.ics` files. File imports do not update automatically.
+- **Outlook mail candidates:** import downloaded `.eml` messages for local deadline extraction and review. If your school permits an Entra app registration, you can also grant read-only Microsoft Graph access to scan recent inbox mail.
 - **Local completion status:** completing a task removes its future reminders. Syncs, reimports, and reschedules of recognized tasks preserve completion until you mark them incomplete yourself. Deleted or cancelled source items are removed on sync.
 - **Chinese/English and purple/gold styling:** language changes apply immediately and persist, including subsequent notifications. Original course titles and notes are preserved.
 
@@ -258,6 +270,14 @@ The script invokes `swiftc` directly, downloads no third-party dependencies, and
 
 **The sharing link may contain a private access token that grants access to your calendar. Keep it out of public issues, screenshots, logs, and Git repositories.**
 
+### Add deadlines from Outlook mail
+
+**Without admin access:** open a message in Outlook on the web and choose **More actions → Download**. In Shiqi, open **Outlook mail** and import the downloaded `.eml` file. Review each candidate before adding it. `.msg` files are not supported. [Microsoft's download instructions](https://support.microsoft.com/en-us/outlook/mail/save-an-outlook-message-as-a-eml-file-a-pdf-file-or-as-a-draft)
+
+**Optional direct scan:** register a public client app in Microsoft Entra, enable **Allow public client flows**, add delegated Microsoft Graph **Mail.Read**, then enter the **Application (client) ID** in Shiqi. A **Directory (tenant) ID** is optional. Complete Microsoft's device-code sign-in and choose **Scan inbox**. Your school may block app registrations or require administrator consent; use `.eml` import in that case. Never enter a Client Secret, mailbox password, or token in Shiqi. [Microsoft's registration guide](https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app)
+
+Scanning runs only when requested, reads at most 300 inbox messages from the last 180 days, and does not read attachments, send, or change messages. Candidate analysis is local; only selected deadlines are saved. Tokens are held in macOS Keychain. Confirm dates against the original message because extraction can miss or misread them.
+
 ### Enable and configure reminders
 
 1. Click **Enable reminders** and allow notifications in the macOS prompt.
@@ -278,6 +298,7 @@ Closing the main window keeps Shiqi running and syncing in the menu bar. **Quit*
 | Label a course | If the calendar omits it, open the task and choose **Set course**; the local label remains after sync |
 | Mark complete | Click the circle beside a task, or mark it complete in details; completion is stored locally |
 | Import a calendar | Use the import icon at the top right; choose a UTF-8 `.ics` file smaller than 5 MB |
+| Import Outlook mail | Use the envelope icon to import `.eml` files; review candidates before adding |
 | Refresh manually | Click **Sync now** or the menu bar's sync button |
 | Manage a subscription | Click **Manage connection** to replace the link or disconnect |
 
@@ -291,10 +312,11 @@ Disconnecting removes the subscription, synced Blackboard events, and associated
 
 ### Coverage and privacy
 
-- Shiqi imports all events in the Blackboard calendar feed, which may include assignments, exams, classes, and personal events. Deadlines mentioned only in announcements, PDFs, emails, or course documents must be added manually.
+- Shiqi imports all events in the Blackboard calendar feed, which may include assignments, exams, classes, and personal events. Deadlines mentioned only in announcements, PDFs, or course documents must be added manually; mail dates can be imported and reviewed in the Outlook window.
 - The subscription link is stored in **macOS Keychain**. Shiqi does not read or store your university password. Embedded sign-in uses a temporary WebKit session without persistent login cookies.
 - Tasks, completion status, and preferences are stored in `~/Library/Application Support/DDLReminder/deadlines.json`. The previous saved version is kept as `deadlines.backup.json` in the same directory. Treat these files as private when backing up course data.
 - The app requests the calendar directly from its server, without a project-operated cloud service. HTTPS redirects are allowed only to the same host.
+- Direct Outlook scanning uses Microsoft sign-in and Microsoft Graph. Shiqi never receives your school password or uploads email bodies to a project server. ChatGPT/Codex Outlook connections have separate authorization that a standalone Shiqi app cannot reuse.
 
 The parser supports UTC, IANA zones, floating times, date-only events, VEVENT/VTODO, line folding and escaping, cancellations, daily/weekly recurrence, EXDATE, RDATE, and individual recurrence overrides. Unsupported complex recurrence rules or custom VTIMEZONE definitions produce warnings. Review those warnings and add missing items manually; full support for every iCalendar extension is not claimed.
 

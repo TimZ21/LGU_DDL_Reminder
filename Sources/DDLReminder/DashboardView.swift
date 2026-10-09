@@ -175,6 +175,7 @@ struct DashboardView: View {
         .sheet(isPresented: $store.showConnection) { ConnectionView().environmentObject(store) }
         .sheet(isPresented: $store.showSettings) { ReminderSettingsView().environmentObject(store) }
         .sheet(isPresented: $store.showEditor) { DeadlineEditor(item: store.editingDeadline).environmentObject(store) }
+        .sheet(isPresented: $store.showOutlook) { OutlookView().environmentObject(store) }
         .sheet(item: $selectedItem) { DeadlineDetailView(itemID: $0.id).environmentObject(store) }
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [UTType(filenameExtension: "ics") ?? .data]) { result in
             switch result { case .success(let url): store.importFile(url); case .failure(let error): store.errorMessage = error.localizedDescription }
@@ -221,6 +222,10 @@ struct DashboardView: View {
                 Label(store.t("提醒与设置", "Reminders & settings"), systemImage: "slider.horizontal.3").font(.system(size: 12)).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 20).padding(.leading, 8)
             }.buttonStyle(.plain)
+            Button { store.showOutlook = true } label: {
+                Label(store.t("Outlook 邮件", "Outlook mail"), systemImage: "envelope").font(.system(size: 12))
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 8)
+            }.buttonStyle(.plain).padding(.bottom, 16)
         }.padding(.horizontal, 18).frame(width: 214).background(Palette.accent.opacity(0.035))
     }
 
@@ -235,6 +240,7 @@ struct DashboardView: View {
             }
             Spacer()
             Button { showImporter = true } label: { Image(systemName: "square.and.arrow.down") }.help(store.t("导入 .ics 日历文件", "Import an .ics calendar file"))
+            Button { store.showOutlook = true } label: { Image(systemName: "envelope") }.help(store.t("从 Outlook 查找 DDL", "Find deadlines in Outlook"))
             Button {
                 store.editingDeadline = nil; store.showEditor = true
             } label: { Label(store.t("添加 DDL", "Add deadline"), systemImage: "plus") }

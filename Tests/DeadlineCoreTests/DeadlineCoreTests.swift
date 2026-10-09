@@ -10,6 +10,93 @@ final class DeadlineCoreTests: XCTestCase {
     func feed(_ body: String) -> String { "BEGIN:VCALENDAR\r\nVERSION:2.0\r\n" + body + "\r\nEND:VCALENDAR" }
     func event(_ body: String) -> String { "BEGIN:VEVENT\r\n" + body + "\r\nEND:VEVENT" }
 
+    func testOutlookMailExtractsDateOnlyAndPreciseTimeWithoutGuessing() {
+        let messages = [
+            MailMessage(id: "registration", subject: "CIE6006 Project Team Registration",
+                        body: "Registration Deadline: October 31", sender: "ta@school.edu",
+                        receivedAt: date("2026-09-21T10:00:00Z")),
+            MailMessage(id: "homework", subject: "CIE6007 Homework 1",
+                        body: "The due date is 19th October, by 11:59 PM.", sender: "ta@school.edu",
+                        receivedAt: date("2026-10-04T00:00:00Z"))
+        ]
+        let found = MailDeadlineExtractor().candidates(from: messages, timeZone: zone, now: date("2026-10-09T00:00:00Z"))
+        XCTAssertEqual(found.count, 2)
+        XCTAssertEqual(found[0].dueDate, date("2026-10-19T23:59:00+08:00"))
+        XCTAssertTrue(found[0].hasTime)
+        XCTAssertEqual(found[1].dueDate, date("2026-10-31T00:00:00+08:00"))
+        XCTAssertFalse(found[1].hasTime)
+        XCTAssertEqual(found[1].course, "CIE6006")
+    }
+
+    func testOutlookCandidateDoesNotGetConsumedByCalendarSync() {
+        let mail = Deadline(id: "outlook:one:1", title: "Homework", dueDate: date("2026-10-19T00:00:00Z"), source: .outlook)
+        let calendar = Deadline(id: "blackboard:one", title: "Homework", dueDate: mail.dueDate, source: .blackboard)
+        let merged = DeadlineMerger.merge(previous: [mail], parsed: ParsedCalendar(deadlines: [calendar], warnings: [], protectedPrefixes: []), source: .blackboard)
+        XCTAssertEqual(Set(merged.map(\.source)), Set([.outlook, .blackboard]))
+    }
+
+    func testOutlookEMLImportReadsMultipartTextAndStableIdentity() throws {
+        let eml = """
+        From: TA <ta@example.edu>\r
+        Subject: CIE6006 Project Team Registration\r
+        Date: Mon, 21 Sep 2026 17:55:00 +0800\r
+        MIME-Version: 1.0\r
+        Content-Type: multipart/alternative; boundary="part123"\r
+        \r
+        --part123\r
+        Content-Type: text/plain; charset="UTF-8"\r
+        Content-Transfer-Encoding: quoted-printable\r
+        \r
+        Registration Deadline: October 31\r
+        --part123\r
+        Content-Type: text/html; charset="UTF-8"\r
+        \r
+        <p>Registration Deadline: November 1</p>\r
+        --part123--\r
+        """
+        let data = Data(eml.utf8)
+        let message = try EMLParser().parse(data)
+        XCTAssertEqual(message, try EMLParser().parse(data))
+        XCTAssertEqual(message.subject, "CIE6006 Project Team Registration")
+        XCTAssertTrue(message.body.contains("October 31"))
+        XCTAssertFalse(message.body.contains("November 1"))
+        let found = MailDeadlineExtractor().candidates(from: [message], timeZone: zone, now: date("2026-10-09T00:00:00Z"))
+        XCTAssertEqual(found.count, 1)
+        XCTAssertEqual(found[0].dueDate, date("2026-10-31T00:00:00+08:00"))
+    }
+
+    func testOutlookEMLImportReadsNestedMultipartWithoutAttachment() throws {
+        let eml = """
+        From: TA <ta@example.edu>
+        Subject: CIE6006 Registration
+        Date: Mon, 21 Sep 2026 17:55:00 +0800
+        Content-Type: multipart/mixed; boundary="outer"
+
+        --outer
+        Content-Type: multipart/alternative; boundary="inner"
+
+        --inner
+        Content-Type: text/html; charset="UTF-8"
+
+        <p>Registration Deadline: November 1</p>
+        --inner
+        Content-Type: text/plain; charset="UTF-8"
+
+        Registration Deadline: October 31
+        --inner--
+        --outer
+        Content-Type: text/plain
+        Content-Disposition: attachment; filename="notes.txt"
+
+        Deadline: December 1
+        --outer--
+        """
+        let message = try EMLParser().parse(Data(eml.utf8))
+        XCTAssertTrue(message.body.contains("October 31"))
+        XCTAssertFalse(message.body.contains("November 1"))
+        XCTAssertFalse(message.body.contains("December 1"))
+    }
+
     func testUTCConvertsToBeijingWithoutShiftingInstant() throws {
         let result = try ICalendarParser().parse(feed(event("UID:a\r\nSUMMARY:Homework\r\nDTSTART:20261009T155900Z")))
         XCTAssertEqual(result.deadlines[0].dueDate, date("2026-10-09T23:59:00+08:00"))
@@ -338,6 +425,10 @@ final class DeadlineCoreTests: XCTestCase {
     }
 
     static var allTests = [
+        ("Outlook 嵌套 MIME 邮件导入", testOutlookEMLImportReadsNestedMultipartWithoutAttachment),
+        ("Outlook EML 文件导入", testOutlookEMLImportReadsMultipartTextAndStableIdentity),
+        ("Outlook 邮件日期和具体时间", testOutlookMailExtractsDateOnlyAndPreciseTimeWithoutGuessing),
+        ("Outlook 候选不被日历同步合并", testOutlookCandidateDoesNotGetConsumedByCalendarSync),
         ("UTC → 北京时间", testUTCConvertsToBeijingWithoutShiftingInstant),
         ("TZID / 无时区日期", testTZIDAndFloatingDate),
         ("仅日期事项与提醒", testAllDayNeverInventsMidnightDeadline),

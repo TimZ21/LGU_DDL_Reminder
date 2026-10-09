@@ -1,6 +1,6 @@
 import Foundation
 
-public enum DeadlineSource: String, Codable { case blackboard, manual, file }
+public enum DeadlineSource: String, Codable { case blackboard, manual, file, outlook }
 
 public struct Deadline: Identifiable, Codable, Equatable {
     public var id: String
