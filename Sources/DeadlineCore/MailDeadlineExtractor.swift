@@ -37,19 +37,18 @@ public struct MailDeadlineExtractor {
     public func candidates(from messages: [MailMessage], timeZone: TimeZone, now: Date = Date()) -> [MailDeadlineCandidate] {
         var calendar = Calendar(identifier: .gregorian); calendar.timeZone = timeZone
         var result: [MailDeadlineCandidate] = []
-        for message in messages {
+        for (messageIndex, message) in messages.enumerated() {
             let lines = (message.subject + "\n" + message.body)
                 .components(separatedBy: .newlines)
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { !$0.isEmpty && $0.count <= 1000 }
             let course = firstMatch(in: message.subject + " " + message.body,
                                     pattern: #"\b[A-Z]{2,4}\s?\d{4}\b"#)?.replacingOccurrences(of: " ", with: "") ?? ""
-            for line in lines where isDeadlineLine(line) {
+            for (lineIndex, line) in lines.enumerated() where isDeadlineLine(line) {
                 guard let parsed = parseDate(in: line, receivedAt: message.receivedAt, calendar: calendar) else { continue }
                 // Ignore dates that are already long gone; old mail often contains historic examples.
                 guard parsed.date >= calendar.date(byAdding: .day, value: -30, to: now)! else { continue }
-                let identifier = "outlook:\(message.id):\(Int(parsed.date.timeIntervalSince1970))"
-                if result.contains(where: { $0.id == identifier }) { continue }
+                let identifier = "outlook:\(message.id):\(messageIndex):\(lineIndex)"
                 result.append(MailDeadlineCandidate(id: identifier, title: message.subject.isEmpty ? "Email deadline" : message.subject,
                                                     course: course, dueDate: parsed.date, hasTime: parsed.hasTime,
                                                     evidence: String(line.prefix(300)), sender: message.sender, link: message.link))

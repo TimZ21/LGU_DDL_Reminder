@@ -169,11 +169,10 @@ struct OutlookView: View {
         do {
             let messages = try await service.recentMessages()
             candidates = MailDeadlineExtractor().candidates(from: messages, timeZone: store.preferences.timeZone)
-                .filter { candidate in !store.snapshot.deadlines.contains(where: { $0.id == candidate.id }) }
             selected.removeAll()
             if candidates.isEmpty {
-                error = store.t("最近 180 天的收件箱邮件中未识别到新的 DDL。请检查邮件原文，或手动添加。",
-                                "No new deadline was recognized in the last 180 days of inbox mail. Check the messages or add it manually.")
+                error = store.t("最近 180 天的收件箱邮件中未识别到 DDL。请检查邮件原文，或手动添加。",
+                                "No deadline was recognized in the last 180 days of inbox mail. Check the messages or add it manually.")
             }
         } catch { self.error = error.localizedDescription }
     }
@@ -195,12 +194,11 @@ struct OutlookView: View {
             catch { failures += 1 }
         }
         candidates = MailDeadlineExtractor().candidates(from: messages, timeZone: store.preferences.timeZone)
-            .filter { candidate in !store.snapshot.deadlines.contains(where: { $0.id == candidate.id }) }
         selected.removeAll()
         if failures > 0 {
             error = store.t("有 \(failures) 个文件不是可读取的 .eml 邮件。", "\(failures) files were not readable .eml messages.")
         } else if candidates.isEmpty {
-            error = store.t("这些邮件中未识别到新的截止日期；可以手动添加。", "No new deadline was recognized in these messages; you can add one manually.")
+            error = store.t("这些邮件中未识别到截止日期；可以手动添加。", "No deadline was recognized in these messages; you can add one manually.")
         }
     }
 }

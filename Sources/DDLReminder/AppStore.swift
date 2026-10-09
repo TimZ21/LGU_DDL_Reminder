@@ -7,6 +7,7 @@ import UserNotifications
 @MainActor
 final class AppStore: ObservableObject {
     @Published private(set) var snapshot = Snapshot()
+    @Published private(set) var codexDeadlines: [Deadline] = []
     @Published var now = Date()
     @Published var isSyncing = false
     @Published var isConnected = false
@@ -28,6 +29,7 @@ final class AppStore: ObservableObject {
     private var started = false
     private var canPersist = true
     private var wakeObserver: NSObjectProtocol?
+    private var codexModifiedAt: Date?
 
     init() {
         if isDemo { loadDemo(); return }
@@ -36,15 +38,34 @@ final class AppStore: ObservableObject {
             canPersist = false
             errorMessage = t("本地数据无法读取。为避免覆盖旧数据，暂时停止保存；请先备份 ~/Library/Application Support/DDLReminder。", "Local data could not be read. Saving is paused to protect existing data. Back up ~/Library/Application Support/DDLReminder first.")
         }
-        do {
-            if let text = try Keychain.read(language: language) { feedURL = try FeedAddress.validate(text, language: language); isConnected = true }
-        } catch { errorMessage = error.localizedDescription }
+        reloadCodexDisplay()
+        let startupLanguage = language
+        Task.detached { [weak self] in
+            let connection = Result { try Keychain.read(language: startupLanguage) }
+            await self?.applyStartupConnection(connection)
+        }
+    }
+
+    private func applyStartupConnection(_ connection: Result<String?, Error>) {
+        switch connection {
+        case .success(let text):
+            if let text {
+                do {
+                    feedURL = try FeedAddress.validate(text, language: language)
+                    isConnected = true
+                    Task { await sync() }
+                } catch { errorMessage = error.localizedDescription }
+            }
+        case .failure(let error): errorMessage = error.localizedDescription
+        }
     }
 
     var preferences: Preferences { snapshot.preferences }
     var language: AppLanguage { preferences.language }
     func t(_ chinese: String, _ english: String) -> String { language.text(chinese, english) }
-    var active: [Deadline] { snapshot.deadlines.filter { !$0.completed }.sorted { $0.dueDate < $1.dueDate } }
+    var displayedDeadlines: [Deadline] { snapshot.deadlines + codexDeadlines }
+    func isCodexDisplay(_ item: Deadline) -> Bool { item.id.hasPrefix("codex:") }
+    var active: [Deadline] { displayedDeadlines.filter { !$0.completed }.sorted { $0.dueDate < $1.dueDate } }
     var upcoming: [Deadline] { active.filter { !$0.isOverdue(at: now, timeZone: preferences.timeZone) } }
     var overdue: [Deadline] { active.filter { $0.isOverdue(at: now, timeZone: preferences.timeZone) } }
     var nextSevenDays: [Deadline] {
@@ -59,11 +80,10 @@ final class AppStore: ObservableObject {
 
     func start() async {
         guard !started else { return }; started = true
-        importCodexInbox()
         if !isDemo { notificationStatus = await notifications.authorization(); reschedule() }
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                guard let self else { return }; self.now = Date(); self.importCodexInbox()
+                guard let self else { return }; self.now = Date(); self.reloadCodexDisplay()
                 if !self.isDemo { self.reschedule() }
                 if self.isConnected, !self.isSyncing,
                    self.lastAttempt == nil || self.now.timeIntervalSince(self.lastAttempt!) >= Double(self.preferences.syncMinutes * 60) {
@@ -77,7 +97,6 @@ final class AppStore: ObservableObject {
                 if self?.isConnected == true { await self?.sync() }
             }
         }
-        if isConnected { await sync() }
     }
 
     func connect(_ text: String) async -> Bool {
@@ -155,50 +174,23 @@ final class AppStore: ObservableObject {
         save(); reschedule()
     }
     func importOutlook(_ candidates: [MailDeadlineCandidate]) {
-        var count = 0
-        for candidate in candidates where !snapshot.deadlines.contains(where: { $0.id == candidate.id }) {
-            snapshot.deadlines.append(candidate.deadline()); count += 1
+        for candidate in candidates {
+            var item = candidate.deadline()
+            item.id = UUID().uuidString
+            snapshot.deadlines.append(item)
         }
         save(); reschedule()
-        notice = t("已从 Outlook 添加 \(count) 个截止日期。", "Added \(count) deadlines from Outlook.")
+        notice = t("已添加你选中的 \(candidates.count) 个截止日期。", "Added the \(candidates.count) deadlines you selected.")
     }
-    func importCodexInbox() {
-        guard !isDemo, canPersist else { return }
+    func reloadCodexDisplay() {
+        guard !isDemo, CodexDisplay.modifiedAt != codexModifiedAt else { return }
         do {
-            for file in try CodexInbox.pending() {
-                let items: [Deadline]
-                do {
-                    items = try CodexDeadlineImport.parse(Data(contentsOf: file), timeZone: preferences.timeZone)
-                } catch {
-                    try? CodexInbox.reject(file)
-                    errorMessage = t("Codex 导入文件 \(file.lastPathComponent) 未能处理：\(error.localizedDescription)",
-                                     "Could not process Codex import \(file.lastPathComponent): \(error.localizedDescription)")
-                    continue
-                }
-                do {
-                    var updated = snapshot
-                    var existing = Set(updated.deadlines.map(\.id))
-                    var added: [Deadline] = []
-                    for item in items {
-                        guard existing.insert(item.id).inserted,
-                              !(updated.deadlines + added).contains(where: {
-                                  CodexDeadlineImport.matchesExisting(item, existing: $0, timeZone: preferences.timeZone)
-                              }) else { continue }
-                        added.append(item)
-                    }
-                    updated.deadlines.append(contentsOf: added)
-                    try LocalStorage.save(updated)
-                    snapshot = updated
-                    try FileManager.default.removeItem(at: file)
-                    if !added.isEmpty {
-                        reschedule()
-                        notice = t("Codex 已补充 \(added.count) 个 Outlook 截止日期。", "Codex added \(added.count) Outlook deadlines.")
-                    }
-                } catch {
-                    errorMessage = t("Codex 导入暂未完成：\(error.localizedDescription)", "Codex import is pending: \(error.localizedDescription)")
-                }
-            }
-        } catch { errorMessage = error.localizedDescription }
+            codexDeadlines = try CodexDisplay.load()
+            codexModifiedAt = CodexDisplay.modifiedAt
+            if started { reschedule() }
+        } catch {
+            errorMessage = t("无法读取 Codex 附加任务文件。", "Could not read the Codex display file.")
+        }
     }
     func delete(_ item: Deadline) { snapshot.deadlines.removeAll { $0.id == item.id }; save(); reschedule() }
     func updatePreferences(_ value: Preferences) {
@@ -224,7 +216,7 @@ final class AppStore: ObservableObject {
         guard !isDemo else { return }
         let previousTask = schedulingTask
         previousTask?.cancel()
-        let plans = ReminderPlanner.plans(for: snapshot.deadlines, preferences: preferences, now: Date())
+        let plans = ReminderPlanner.plans(for: displayedDeadlines, preferences: preferences, now: Date())
         let zone = preferences.timeZone; let enabled = preferences.notificationsEnabled
         schedulingTask = Task { [weak self] in
             guard let self else { return }

@@ -55,7 +55,7 @@ struct DeadlineDetailView: View {
     @State private var showEdit = false
     @State private var showCourseEdit = false
     @State private var confirmDelete = false
-    private var item: Deadline? { store.snapshot.deadlines.first { $0.id == itemID } }
+    private var item: Deadline? { store.displayedDeadlines.first { $0.id == itemID } }
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             if let item {
@@ -76,8 +76,12 @@ struct DeadlineDetailView: View {
                 Text(store.t("「已完成」是本机记录，不代表 Blackboard 已提交或已评分。", "Completion is recorded locally; it does not mean submitted or graded in Blackboard."))
                     .font(.caption).foregroundStyle(.secondary)
                 HStack {
+                    if !store.isCodexDisplay(item) {
                     Button(item.completed ? store.t("设为待办", "Mark incomplete") : store.t("标记已完成", "Mark complete")) { store.toggle(item) }.buttonStyle(PrimaryButtonStyle())
-                    if item.source == .manual || item.source == .outlook {
+                    }
+                    if store.isCodexDisplay(item) {
+                        Text(store.t("Codex 附加条目 · 只读", "Codex entry · read only")).font(.caption).foregroundStyle(.secondary)
+                    } else if item.source == .manual || item.source == .outlook {
                         Button(store.t("编辑", "Edit")) { showEdit = true }
                         Button(store.t("删除", "Delete"), role: .destructive) { confirmDelete = true }
                     } else {

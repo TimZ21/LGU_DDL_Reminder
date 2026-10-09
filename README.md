@@ -93,13 +93,9 @@ SwiftUI · macOS 13+ · 中文 / English · MIT
 
 扫描只在点击时执行，不会后台持续读取。拾期最多查看最近 180 天、前 300 封收件箱邮件，不读取附件，也不发送或修改邮件。候选内容在本机分析，只有选中的 DDL 会保存；授权令牌保存在 macOS 钥匙串。日期未写具体时刻时标注「时间待确认」。邮件正文中的日期识别可能遗漏或误判，添加前请核对原文。
 
-**本机 Codex 接口：**在已连接 Outlook Email 的本机 Codex 对话中，可让 Codex 核对邮件中的 DDL，再把确认过的任务写成如下 JSON 文件，并运行 `python3 scripts/codex_import.py /path/to/deadlines.json`。拾期在启动、切回前台或运行期间最多一分钟内读取并导入；不需要导出整个邮箱，也不需要学校的 Entra Client ID。接口只接收截止日期字段，不接收邮箱密码或整封邮件。文件保存在 `~/Library/Application Support/DDLReminder/CodexInbox`，处理后删除；无效文件改名为 `.rejected`。相同 `id` 重复提交不会生成重复任务。普通 ChatGPT 网页对话不能直接写入 Mac 的本机文件，需通过有本机文件权限的 Codex 会话使用此接口。
+**由你决定任务：**Outlook 窗口只展示从邮件提取的候选日期，不与现有日历任务比较，也不自动去重、合并或更新。你查看邮件原文和现有任务后，自行勾选要新增的候选；内容更新时也作为新条目添加，原条目保留。重复导入同一邮件也会再次显示候选，由你决定是否添加。
 
-```json
-{"version":1,"items":[{"id":"outlook-message-unique-id","title":"Homework 1","course":"CIE6007","dueAt":"2026-10-19T23:59:00+08:00","hasTime":true,"evidence":"Due October 19 at 11:59 PM"},{"id":"team-registration","title":"Project Team Registration","course":"CIE6006","dueAt":"2026-10-31","hasTime":false}]}
-```
-
-每份文件最多 100 条，最大 1 MB；`hasTime: true` 时 `dueAt` 必须包含时区，`false` 时只填写 `YYYY-MM-DD`。接口只添加新任务，不修改或删除已有任务。Codex 应先排除已存在的日历与手动任务，并核对课程和日期。
+**Codex 附加条目：**只有你明确选定要新增的任务后，本机 Codex 才可将这些字段写成 JSON，并运行 `python3 scripts/codex_append.py /path/to/approved.json`。输入格式为 `{"items":[{"title":"Homework 1","course":"CIE6007","dueAt":"2026-10-19T23:59:00+08:00","hasTime":true,"notes":"邮件原文摘要"}]}`；仅日期填写 `YYYY-MM-DD` 并设 `hasTime:false`。脚本只向独立的 `CodexDeadlines.jsonl` 追加新行，不读取、修改或删除 App 与日历的任务数据。内容更新时追加更新后的条目，原条目仍保留。拾期只读取并显示这些附加条目，也会为其安排提醒；是否重复、哪条有效由你人工判断。
 
 ### 开启与调整提醒
 
@@ -140,7 +136,6 @@ SwiftUI · macOS 13+ · 中文 / English · MIT
 - 任务、完成状态和设置保存在 `~/Library/Application Support/DDLReminder/deadlines.json`；上一次保存的内容备份为同目录下的 `deadlines.backup.json`。备份课程数据时也应保护这些文件。
 - 应用直接向日历服务器发起请求，不使用自建云端服务。HTTPS 重定向仅允许同一主机。
 - Outlook 直接扫描使用微软登录与 Microsoft Graph；拾期不获取学校密码，不将邮件正文上传到项目服务器。ChatGPT/Codex 的 Outlook 连接与拾期的 Graph 授权彼此独立，不能共用令牌。
-- 本机 Codex 接口只导入已核对的任务字段；它不是 Outlook 自动授权，也不复制整个邮箱。导入文件只由本机同一用户可写入，处理后移除。
 
 支持 UTC、IANA 时区、无时区日期、仅日期事项、VEVENT/VTODO、折行与转义、取消事件、每日/每周重复、EXDATE、RDATE 和单次重复事件改期。不支持的复杂重复规则或自定义 VTIMEZONE 会明确提示；请核对提示并手动补充，不保证支持所有 iCalendar 扩展。
 
@@ -287,7 +282,9 @@ The script invokes `swiftc` directly, downloads no third-party dependencies, and
 
 Scanning runs only when requested, reads at most 300 inbox messages from the last 180 days, and does not read attachments, send, or change messages. Candidate analysis is local; only selected deadlines are saved. Tokens are held in macOS Keychain. Confirm dates against the original message because extraction can miss or misread them.
 
-**Local Codex handoff:** A local Codex session with Outlook Email connected can verify mail deadlines and create the version 1 JSON package shown above. Run `python3 scripts/codex_import.py /path/to/deadlines.json`; Shiqi imports it on launch, focus, or within one minute while running. This needs no mailbox export or Entra Client ID. Each package may contain up to 100 items (1 MB); timed `dueAt` values must include an ISO 8601 time zone, while date-only values use `YYYY-MM-DD`. Reusing the same `id` does not duplicate a task. The handoff only adds deadlines and never changes or deletes existing ones. An ordinary web ChatGPT conversation cannot write to this Mac's local inbox; use a local Codex session with file access.
+**You decide what to add:** The Outlook window shows dates extracted from mail without comparing them with existing calendar tasks or automatically deduplicating, merging, or updating tasks. Review the original message and current tasks, then select the candidates to add. Add revised content as a new entry; the old entry remains. Importing the same mail again shows its candidates again.
+
+**Codex entries:** After you explicitly select entries to add, a local Codex session can create a JSON file in the format shown above and run `python3 scripts/codex_append.py /path/to/approved.json`. The script appends new lines to a separate `CodexDeadlines.jsonl` file. It never reads, changes, or removes the app's existing tasks or calendar data. Revised content is appended as a new entry; the old entry remains. Shiqi reads and displays these entries and schedules reminders. You decide whether entries are duplicates and which one is valid.
 
 ### Enable and configure reminders
 
@@ -327,7 +324,6 @@ Disconnecting removes the subscription, synced Blackboard events, and associated
 - The subscription link is stored in **macOS Keychain**. Shiqi does not read or store your university password. Embedded sign-in uses a temporary WebKit session without persistent login cookies.
 - Tasks, completion status, and preferences are stored in `~/Library/Application Support/DDLReminder/deadlines.json`. The previous saved version is kept as `deadlines.backup.json` in the same directory. Treat these files as private when backing up course data.
 - The app requests the calendar directly from its server, without a project-operated cloud service. HTTPS redirects are allowed only to the same host.
-- The local Codex handoff contains reviewed deadline fields, not mailbox credentials or full messages. The app removes successfully imported packages from `~/Library/Application Support/DDLReminder/CodexInbox`.
 - Direct Outlook scanning uses Microsoft sign-in and Microsoft Graph. Shiqi never receives your school password or uploads email bodies to a project server. ChatGPT/Codex Outlook connections have separate authorization that a standalone Shiqi app cannot reuse.
 
 The parser supports UTC, IANA zones, floating times, date-only events, VEVENT/VTODO, line folding and escaping, cancellations, daily/weekly recurrence, EXDATE, RDATE, and individual recurrence overrides. Unsupported complex recurrence rules or custom VTIMEZONE definitions produce warnings. Review those warnings and add missing items manually; full support for every iCalendar extension is not claimed.

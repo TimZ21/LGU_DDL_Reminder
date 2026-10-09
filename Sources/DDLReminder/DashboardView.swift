@@ -88,7 +88,7 @@ struct DashboardView: View {
         case .upcoming: selected = store.upcoming
         case .week: selected = store.nextSevenDays
         case .overdue: selected = store.overdue
-        case .completed: selected = store.snapshot.deadlines.filter(\.completed).sorted { $0.dueDate > $1.dueDate }
+        case .completed: selected = store.displayedDeadlines.filter(\.completed).sorted { $0.dueDate > $1.dueDate }
         }
         return selected.filter { query.isEmpty || ($0.title + $0.course + $0.notes).localizedCaseInsensitiveContains(query) }
     }
@@ -183,7 +183,7 @@ struct DashboardView: View {
         .onReceive(NotificationCenter.default.publisher(for: .showDeadlineWindow)) { _ in
             openWindow(id: "main"); NSApp.activate(ignoringOtherApps: true)
         }
-        .onChange(of: scenePhase) { phase in if phase == .active { store.importCodexInbox(); Task { await store.refreshPermission() } } }
+        .onChange(of: scenePhase) { phase in if phase == .active { store.reloadCodexDisplay(); Task { await store.refreshPermission() } } }
     }
 
     private var sidebar: some View {
@@ -298,7 +298,7 @@ struct DashboardView: View {
         return store.t("上次同步 \(store.format(date, pattern: "M/d HH:mm"))", "Last synced \(store.format(date, pattern: "M/d HH:mm"))") + (store.stale ? store.t(" · 数据可能不是最新的", " · Data may be out of date") : store.t(" · 每 \(store.preferences.syncMinutes) 分钟更新", " · Updates every \(store.preferences.syncMinutes) min"))
     }
     private func count(_ value: DeadlineFilter) -> Int {
-        switch value { case .upcoming: return store.upcoming.count; case .week: return store.nextSevenDays.count; case .overdue: return store.overdue.count; case .completed: return store.snapshot.deadlines.filter(\.completed).count }
+        switch value { case .upcoming: return store.upcoming.count; case .week: return store.nextSevenDays.count; case .overdue: return store.overdue.count; case .completed: return store.displayedDeadlines.filter(\.completed).count }
     }
     private func banner(_ text: String, icon: String, color: Color) -> some View {
         Label(text, systemImage: icon).font(.system(size: 12)).foregroundStyle(color).padding(12)
@@ -320,11 +320,16 @@ struct DeadlineRow: View {
     private var urgent: Bool { item.hasTime && !item.completed && item.dueDate.timeIntervalSince(store.now) < 86400 }
     var body: some View {
         HStack(spacing: 13) {
+            if store.isCodexDisplay(item) {
+                Image(systemName: "doc.text").font(.system(size: 20)).foregroundStyle(.secondary)
+                    .frame(width: 20).accessibilityLabel(store.t("只读附加条目", "Read-only entry"))
+            } else {
             Button { store.toggle(item) } label: {
                 Image(systemName: item.completed ? "checkmark.circle.fill" : "circle").font(.system(size: 20))
                     .foregroundStyle(item.completed ? Palette.accent : Color.secondary.opacity(0.45))
             }.buttonStyle(.plain).help(item.completed ? store.t("重新设为待办", "Mark incomplete") : store.t("标记为已完成", "Mark complete"))
                 .accessibilityLabel(item.completed ? store.t("重新设为待办", "Mark incomplete") : store.t("标记为已完成", "Mark complete"))
+            }
             Button(action: onDetail) {
                 HStack {
                     VStack(alignment: .leading, spacing: 7) {
