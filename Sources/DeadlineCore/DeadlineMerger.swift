@@ -56,6 +56,7 @@ public enum DeadlineMerger {
                 let prior = previous[priorIndex]
                 // Completion is a local user choice, including after a source reschedule.
                 item.completed = prior.completed
+                item.reminderID = prior.reminderID
                 if source == .file && prior.source == .blackboard {
                     // Importing the same event from a file must not detach it from sync.
                     item.id = prior.id

@@ -2,7 +2,7 @@
 
 ## 中文
 
-**拾期是给龙大学子的免费开源软件，由个人独立开发，非学校或 Blackboard 官方产品，未经校方背书。**「龙大」仅是目标学生群体的非正式昵称，不代表项目拥有任何学校名称或商标的权利，也不表示双方存在合作关系。
+**拾期是给龙大学子的免费开源软件，由个人独立开发，非学校或 Blackboard 官方产品，未经校方背书。**「龙大」是学生因港中深位于龙岗而起的非正式昵称「龙岗大学」，英文简称 **LGU（Longgang University）**。它不是学校正式名称，不代表项目拥有任何学校名称或商标的权利，也不表示双方存在合作关系。
 
 1.1.2 起，源码与当前发布包不再包含学校校徽、官方校名标志或从学校官网下载的标志图片。界面和应用图标使用拾期自己的日历与勾选图案；紫金色仅作为本项目界面配色，不宣称采用学校官方视觉规范。
 
@@ -22,7 +22,7 @@
 
 ## English
 
-**Shiqi is free, open-source software for Longda students, independently developed by an individual. It is not an official or university-endorsed product or an official Blackboard product.** “Longda” is an informal nickname for the intended student community, not a claim to a university name or trademark or an indication of a partnership.
+**Shiqi is free, open-source software for LGU students, independently developed by an individual. It is not an official or university-endorsed product or an official Blackboard product.** Students call CUHK-Shenzhen “龙大”, short for “龙岗大学” (**Longgang University, LGU**), because the campus is in Longgang. This informal nickname is not an official university name, a claim to a university name or trademark, or an indication of a partnership.
 
 Starting with version 1.1.2, source and current release packages contain no university emblem, official wordmark, or downloaded university logo image. The interface and app icon use Shiqi’s own calendar and checkmark design. Purple and gold are interface colors, without a claim to follow an official university identity system.
 

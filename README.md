@@ -2,7 +2,7 @@
 
 给龙大学子的免费开源软件：轻量原生 macOS 截止日期提醒工具，适配校园 Blackboard。
 
-Free, open-source software for Longda students: a lightweight native macOS deadline reminder for the campus Blackboard.
+Free, open-source software for LGU students: a lightweight native macOS deadline reminder for the campus Blackboard.
 
 **[中文说明](#zh-cn) · [English guide](#en)**
 
@@ -14,13 +14,14 @@ SwiftUI · macOS 13+ · 中文 / English · MIT
 
 拾期通过 [bb.cuhk.edu.cn](https://bb.cuhk.edu.cn) 的官方日历订阅链接读取日历事项，显示准确的截止日期、时间与倒计时，并通过 macOS 系统通知提醒。运行时无需 Python、Node.js 或后台服务器。
 
-这是独立开发的免费开源项目，非学校或 Blackboard 官方产品，未经校方背书。「龙大」仅作为目标学生群体的非正式昵称。
+这是独立开发的免费开源项目，非学校或 Blackboard 官方产品，未经校方背书。「龙大」是学生给位于龙岗的港中深起的非正式昵称「龙岗大学」，英文简称 **LGU（Longgang University）**；不是学校的正式名称。
 
 ### 功能
 
 - **自动同步**：默认每 15 分钟更新，也可手动同步；同步失败时保留已有数据，显示错误和上次同步时间。
 - **清晰的日期与时间**：按日期分组，详情显示星期、时分秒和时区；支持即将截止、未来 7 天、已逾期、已完成及搜索。
 - **系统提醒**：默认提前 24 小时、3 小时、30 分钟，以及到期时提醒，可在设置中调整。
+- **macOS 提醒事项（1.2.0 起）**：可选同步到「拾期 · DDL」列表，保留准确的日期、时间、课程与备注；完成和恢复待办状态双向同步，重复导入不会重复创建已识别的任务。
 - **补充遗漏的 DDL**：支持手动添加和 `.ics` 文件导入；文件导入后不会自动更新。
 - **本地完成状态**：完成后取消相关未来提醒；再次同步、重导入或已识别事项改期时保留完成状态，只有手动恢复待办才会取消完成。来源删除或取消的事项会在同步后移除。
 - **中英双语与紫金主题**：语言即时切换并自动保存，界面与后续通知使用所选语言；课程标题与备注保留来源原文。
@@ -94,6 +95,21 @@ SwiftUI · macOS 13+ · 中文 / English · MIT
 
 关闭主窗口后，拾期会继续在菜单栏运行和同步。选择「退出」会停止同步；已经排程的通知仍由 macOS 管理。电脑关机时无法提醒，睡眠、专注模式与系统通知设置也可能延迟展示。运行期间每分钟维护最多 60 条近期通知，优先安排较近的提醒。
 
+### 同步到 macOS 提醒事项
+
+此功能从 **1.2.0** 开始提供，默认关闭；1.1.2 安装包仍只支持拾期自身的系统通知。
+
+1. 打开「提醒与设置」（`⌘,`），开启「同步 DDL 到提醒事项」。
+2. 在 macOS 提示中允许拾期访问提醒事项。若此前拒绝，可到「系统设置」→「隐私与安全性」→「提醒事项」开启权限，再重试。
+3. 打开系统「提醒事项」，找到 **「拾期 · DDL」** 专用列表。应用中的待办、逾期及已完成事项都会同步；已完成事项可在列表的「显示已完成」中查看。
+4. 拾期运行时每分钟检查，也会在 DDL 导入、改期、编辑和完成后同步；可点击「立即同步到提醒事项」手动触发。
+
+- 标题、课程、备注和截止时间以拾期为准；在任一应用完成或恢复待办会同步到另一边。双方都修改完成状态时，拾期自上次成功同步后的本地修改优先。完成状态不会提交作业或修改 Blackboard。
+- 具体时间按所选时区导出，保留实际截止时刻。仅日期事项不设置虚构的午夜或 23:59 截止时间。
+- 提醒事项在具体截止时间设置提醒；提前提醒仍由拾期的「发送系统通知」控制，同时启用可能出现重复通知。仅日期事项继续由拾期按原有 09:00 规则提醒。
+- 删除 DDL、来源取消事项或断开 Blackboard 后，相应的托管提醒事项会在下次成功同步时移除。在提醒事项里直接删除但在拾期仍存在的任务，会在下次同步重新创建。拾期不会操作其他列表或专用列表里你手动添加的事项。
+- 关闭同步会保留已导出的事项；退出拾期后停止双向同步。列表使用系统默认提醒事项账户，如果该账户是 iCloud，导出的课程内容会通过你的 iCloud 同步到其他设备。
+
 ### 日常操作
 
 | 操作 | 使用方法 |
@@ -101,7 +117,7 @@ SwiftUI · macOS 13+ · 中文 / English · MIT
 | 切换语言 | 「提醒与设置」→「语言 / Language」→ 简体中文或 English；即时生效并保存 |
 | 添加截止日期 | 点击「添加 DDL」；填写任务、课程、日期、时间和备注 |
 | 查看详情 | 点击任务行，查看完整时间与备注 |
-| 标记完成 | 点击任务左侧圆圈，或在详情中标记完成；状态仅保存在本机 |
+| 标记完成 | 点击任务左侧圆圈，或在详情中标记完成；开启提醒事项同步后，状态也会同步到该列表 |
 | 导入日历文件 | 点击主窗口右上角导入图标，选择小于 5 MB 的 UTF-8 `.ics` 文件 |
 | 手动同步 | 点击「立即同步」，或使用菜单栏的同步按钮 |
 | 管理订阅 | 点击「管理连接」；更换链接或断开连接 |
@@ -120,6 +136,7 @@ SwiftUI · macOS 13+ · 中文 / English · MIT
 - 订阅链接保存在 **macOS 钥匙串**。软件不读取或保存学校密码；应用内登录使用临时 WebKit 会话，不持久化登录 cookie。
 - 任务、完成状态和设置保存在 `~/Library/Application Support/DDLReminder/deadlines.json`；上一次保存的内容备份为同目录下的 `deadlines.backup.json`。备份课程数据时也应保护这些文件。
 - 应用直接向日历服务器发起请求，不使用自建云端服务。HTTPS 重定向仅允许同一主机。
+- 提醒事项同步默认关闭，开启时才申请访问权限。仅管理「拾期 · DDL」列表中由拾期创建的事项，不导出日历订阅链接或学校密码。使用 iCloud 提醒事项账户时，导出的任务数据受你的 Apple 账户同步设置管理。
 
 支持 UTC、IANA 时区、无时区日期、仅日期事项、VEVENT/VTODO、折行与转义、取消事件、每日/每周重复、EXDATE、RDATE 和单次重复事件改期。不支持的复杂重复规则或自定义 VTIMEZONE 会明确提示；请核对提示并手动补充，不保证支持所有 iCalendar 扩展。
 
@@ -131,6 +148,7 @@ SwiftUI · macOS 13+ · 中文 / English · MIT
 | 应用内登录页面无法加载 | 在默认浏览器登录、获取共享链接，再粘贴到拾期。 |
 | 没有看到某门课的作业 | 先核对 Blackboard 全局日历是否包含它；只在公告或附件里写出的 DDL 需手动添加。 |
 | 没有收到通知 | 检查「系统设置」→「通知」→「拾期」、应用内「发送系统通知」与提醒时点，调整专注模式，并发送测试通知。 |
+| 提醒事项没有同步 | 使用 1.2.0 或更高版本；检查同步开关和提醒事项访问权限，先在系统提醒事项中设置可用的本机或 iCloud 账户，再点「立即同步到提醒事项」。 |
 | 重新构建后出现钥匙串提示 | 确认运行的是自己构建或可信来源的拾期，在 macOS 系统提示中批准访问；不要把 Mac 密码发给项目维护者。 |
 | 构建提示 SDK 与编译器不匹配 | 使用匹配的 Apple 工具链与 SDK，或通过下方的 `DDL_SDK_PATH` 显式选择。 |
 
@@ -187,13 +205,14 @@ DDL_SDK_PATH="/path/to/compatible/MacOSX.sdk" bash scripts/build.sh
 
 Shiqi reads calendar events from the official subscription feed on [bb.cuhk.edu.cn](https://bb.cuhk.edu.cn), displays exact deadlines and countdowns, and sends macOS notifications. No Python, Node.js, or background server is required at runtime.
 
-This is an independently developed, free and open-source project, not an official or university-endorsed product or an official Blackboard product. “Longda” is an informal nickname for the intended student community.
+This is an independently developed, free and open-source project, not an official or university-endorsed product or an official Blackboard product. Students call CUHK-Shenzhen “龙大”, short for the informal nickname “龙岗大学” (**Longgang University, LGU**), because the campus is in Longgang. This is not the university's official name.
 
 ### Features
 
 - **Automatic sync:** updates every 15 minutes by default, with manual refresh available. Failed syncs keep existing data and show the error and last successful sync time.
 - **Clear dates and times:** events grouped by date; details include the weekday, seconds, and time zone. Filter upcoming, next 7 days, overdue, or completed items, and search your tasks.
 - **System reminders:** alerts 24 hours, 3 hours, and 30 minutes before a deadline, and at the deadline, with configurable reminder times.
+- **macOS Reminders (1.2.0+):** optionally sync to the dedicated 拾期 · DDL list with exact dates and times, courses, and notes. Completion and reopening sync both ways; reimporting recognized tasks does not create duplicates.
 - **Add missing deadlines:** create tasks manually or import `.ics` files. File imports do not update automatically.
 - **Local completion status:** completing a task removes its future reminders. Syncs, reimports, and reschedules of recognized tasks preserve completion until you mark them incomplete yourself. Deleted or cancelled source items are removed on sync.
 - **Chinese/English and purple/gold styling:** language changes apply immediately and persist, including subsequent notifications. Original course titles and notes are preserved.
@@ -267,6 +286,21 @@ Date-only items are marked **Time to confirm** and receive reminders at **09:00*
 
 Closing the main window keeps Shiqi running and syncing in the menu bar. **Quit** stops sync; macOS still manages notifications already scheduled. Alerts cannot appear while the Mac is shut down, and sleep, Focus, or notification settings may delay them. While running, Shiqi maintains up to 60 upcoming notifications each minute, prioritizing the nearest alerts.
 
+### Sync to macOS Reminders
+
+Available from **1.2.0**, off by default. The 1.1.2 package supports only Shiqi's own system notifications.
+
+1. Open **Reminders & settings** (`⌘,`) and enable **Sync deadlines to Reminders**.
+2. Allow Reminders access in the macOS prompt. If previously denied, enable access in **System Settings → Privacy & Security → Reminders**, then retry.
+3. Open Apple's **Reminders** app and find the dedicated **拾期 · DDL** list. Pending, overdue, and completed tasks are synced; use **Show Completed** to view completed tasks.
+4. Shiqi checks every minute while running and syncs after importing, rescheduling, editing, or completing deadlines. **Sync to Reminders now** triggers a manual check.
+
+- Titles, courses, notes, and deadlines come from Shiqi. Completing or reopening in either app syncs to the other. If both change completion, local Shiqi changes since the last successful sync take precedence. Completion never submits work or changes Blackboard.
+- Timed items retain the actual deadline instant in the selected zone. Date-only items have no invented midnight or 23:59 deadline.
+- Reminders supplies an alert at the exact due time. Advance alerts remain controlled by Shiqi's **Send system notifications** setting; enabling both may duplicate alerts. Date-only items keep Shiqi's existing 09:00 notification rule.
+- Removing a deadline, a source cancellation, or disconnecting Blackboard removes the corresponding managed reminder at the next successful sync. Deleting an exported reminder while keeping its deadline in Shiqi recreates it on the next sync. Other lists and tasks you manually add to the dedicated list are unaffected.
+- Turning sync off keeps exported tasks. Quitting Shiqi stops two-way sync. The list uses your default Reminders account; an iCloud account syncs exported course content to your other devices through your Apple account.
+
 ### Everyday use
 
 | Action | How |
@@ -274,7 +308,7 @@ Closing the main window keeps Shiqi running and syncing in the menu bar. **Quit*
 | Change language | **Reminders & settings → 语言 / Language → 简体中文 / English**; applies immediately and persists |
 | Add a deadline | Click **Add deadline**; enter the task, course, date, time, and notes |
 | View details | Click a task row to see its full time and notes |
-| Mark complete | Click the circle beside a task, or mark it complete in details; completion is stored locally |
+| Mark complete | Click the circle beside a task or mark it complete in details; when Reminders sync is enabled, completion also syncs to that list |
 | Import a calendar | Use the import icon at the top right; choose a UTF-8 `.ics` file smaller than 5 MB |
 | Refresh manually | Click **Sync now** or the menu bar's sync button |
 | Manage a subscription | Click **Manage connection** to replace the link or disconnect |
@@ -293,6 +327,7 @@ Disconnecting removes the subscription, synced Blackboard events, and associated
 - The subscription link is stored in **macOS Keychain**. Shiqi does not read or store your university password. Embedded sign-in uses a temporary WebKit session without persistent login cookies.
 - Tasks, completion status, and preferences are stored in `~/Library/Application Support/DDLReminder/deadlines.json`. The previous saved version is kept as `deadlines.backup.json` in the same directory. Treat these files as private when backing up course data.
 - The app requests the calendar directly from its server, without a project-operated cloud service. HTTPS redirects are allowed only to the same host.
+- Reminders sync is off by default and requests access only when enabled. It manages only Shiqi-created tasks in the 拾期 · DDL list and never exports the subscription link or your university password. An iCloud Reminders account syncs exported task data according to your Apple account settings.
 
 The parser supports UTC, IANA zones, floating times, date-only events, VEVENT/VTODO, line folding and escaping, cancellations, daily/weekly recurrence, EXDATE, RDATE, and individual recurrence overrides. Unsupported complex recurrence rules or custom VTIMEZONE definitions produce warnings. Review those warnings and add missing items manually; full support for every iCalendar extension is not claimed.
 
@@ -304,6 +339,7 @@ The parser supports UTC, IANA zones, floating times, date-only events, VEVENT/VT
 | Embedded sign-in fails to load | Obtain the sharing link in your default browser and paste it into Shiqi. |
 | An assignment is missing | Check whether it appears in Blackboard's global Calendar. Add deadlines from announcements or attachments manually. |
 | Notifications do not appear | Check **System Settings → Notifications → 拾期**, **Send system notifications**, and the selected reminder times. Review Focus settings and send a test notification. |
+| Reminders do not sync | Use version 1.2.0 or later. Check the sync toggle and Reminders access, set up a local or iCloud Reminders account, then click **Sync to Reminders now**. |
 | A Keychain prompt appears after rebuilding | Verify that you are running your own build or a trusted Shiqi build, then approve access in the macOS prompt. Never send your Mac password to maintainers. |
 | Compiler and SDK versions do not match | Use a matching Apple toolchain and SDK, or choose an SDK explicitly with `DDL_SDK_PATH` below. |
 

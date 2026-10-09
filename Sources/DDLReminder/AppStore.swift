@@ -14,16 +14,23 @@ final class AppStore: ObservableObject {
     @Published var notice: String?
     @Published var notificationStatus: UNAuthorizationStatus = .notDetermined
     @Published var scheduledCount = 0
+    @Published var isSyncingAppleReminders = false
+    @Published var isRequestingRemindersAccess = false
+    @Published var appleRemindersCount = 0
+    @Published var appleRemindersLastSync: Date?
+    @Published var appleRemindersError: String?
     @Published var showConnection = false
     @Published var showSettings = false
     @Published var showEditor = false
     @Published var editingDeadline: Deadline?
     let isDemo = ProcessInfo.processInfo.arguments.contains("--demo") || Bundle.main.object(forInfoDictionaryKey: "DDLDemoMode") as? Bool == true
     private let notifications = NotificationService()
+    private lazy var appleRemindersService = AppleRemindersService()
     private var feedURL: URL?
     private var timer: Timer?
     private var lastAttempt: Date?
     private var schedulingTask: Task<Void, Never>?
+    private var appleRemindersTask: Task<Void, Never>?
     private var started = false
     private var canPersist = true
     private var wakeObserver: NSObjectProtocol?
@@ -137,7 +144,10 @@ final class AppStore: ObservableObject {
         snapshot.deadlines[i].completed.toggle(); save(); reschedule()
     }
     func upsert(_ item: Deadline) {
-        if let index = snapshot.deadlines.firstIndex(where: { $0.id == item.id }) { snapshot.deadlines[index] = item }
+        if let index = snapshot.deadlines.firstIndex(where: { $0.id == item.id }) {
+            var updated = item; updated.reminderID = snapshot.deadlines[index].reminderID
+            snapshot.deadlines[index] = updated
+        }
         else { snapshot.deadlines.append(item) }
         save(); reschedule()
     }
@@ -163,6 +173,7 @@ final class AppStore: ObservableObject {
     }
     private func reschedule() {
         guard !isDemo else { return }
+        syncAppleReminders()
         let previousTask = schedulingTask
         previousTask?.cancel()
         let plans = ReminderPlanner.plans(for: snapshot.deadlines, preferences: preferences, now: Date())
@@ -179,10 +190,75 @@ final class AppStore: ObservableObject {
             catch { self.errorMessage = t("提醒排程失败，请打开提醒设置重试。", "Could not schedule reminders. Open reminder settings and try again.") }
         }
     }
-    private func save() {
-        guard !isDemo, canPersist else { return }
-        do { try LocalStorage.save(snapshot) }
-        catch { errorMessage = t("数据保存失败，请检查磁盘空间和权限。当前窗口的数据尚未保存。", "Could not save data. Check disk space and permissions. Changes in this window have not been saved.") }
+    @discardableResult
+    private func save() -> Bool {
+        guard !isDemo, canPersist else { return false }
+        do { try LocalStorage.save(snapshot); return true }
+        catch {
+            errorMessage = t("数据保存失败，请检查磁盘空间和权限。当前窗口的数据尚未保存。", "Could not save data. Check disk space and permissions. Changes in this window have not been saved.")
+            return false
+        }
+    }
+
+    func setAppleRemindersEnabled(_ enabled: Bool) async {
+        guard !isDemo else {
+            appleRemindersError = t("演示模式不会访问真实的提醒事项。", "Demo mode does not access real Reminders."); return
+        }
+        guard !isRequestingRemindersAccess else { return }
+        if !enabled {
+            var settings = preferences; settings.appleRemindersEnabled = false
+            updatePreferences(settings); appleRemindersError = nil
+            return
+        }
+        isRequestingRemindersAccess = true
+        defer { isRequestingRemindersAccess = false }
+        do {
+            guard try await appleRemindersService.requestPermission() else {
+                appleRemindersError = t("请在系统设置 → 隐私与安全性 → 提醒事项中允许拾期访问，然后重新开启。", "Allow Shiqi in System Settings → Privacy & Security → Reminders, then enable sync again.")
+                return
+            }
+            var settings = preferences; settings.appleRemindersEnabled = true
+            appleRemindersError = nil; updatePreferences(settings)
+        } catch {
+            appleRemindersError = t("无法获得提醒事项权限，请检查系统设置后重试。", "Could not obtain Reminders access. Check System Settings and retry.")
+        }
+    }
+
+    func syncAppleReminders() {
+        let previousTask = appleRemindersTask
+        previousTask?.cancel()
+        guard !isDemo, canPersist, preferences.appleRemindersEnabled else {
+            isSyncingAppleReminders = false; return
+        }
+        appleRemindersTask = Task { [weak self] in
+            guard let self else { return }
+            // Take the baseline after the preceding EventKit sync applies its result.
+            await previousTask?.value
+            guard !Task.isCancelled, self.preferences.appleRemindersEnabled else { return }
+            self.isSyncingAppleReminders = true
+            defer { self.isSyncingAppleReminders = false }
+            guard self.save() else { return } // Persist migrated identities before exporting.
+            let deadlines = self.snapshot.deadlines
+            do {
+                let result = try await self.appleRemindersService.reconcile(deadlines,
+                    state: self.snapshot.appleReminders, timeZone: self.preferences.timeZone, language: self.language)
+                var completionChanged = false
+                for index in self.snapshot.deadlines.indices {
+                    let item = self.snapshot.deadlines[index]
+                    guard let original = deadlines.first(where: { $0.reminderID == item.reminderID }),
+                          item.completed == original.completed,
+                          let completed = result.completions[item.reminderID], completed != item.completed else { continue }
+                    self.snapshot.deadlines[index].completed = completed; completionChanged = true
+                }
+                self.snapshot.appleReminders = result.state
+                self.save()
+                self.appleRemindersCount = result.count; self.appleRemindersLastSync = Date()
+                self.appleRemindersError = nil
+                // Cancel advance alerts when a task was completed in Reminders.
+                if completionChanged { self.reschedule() }
+            } catch is CancellationError { }
+            catch { self.appleRemindersError = error.localizedDescription }
+        }
     }
     func setLaunchAtLogin(_ enabled: Bool) {
         guard !isDemo else { return }

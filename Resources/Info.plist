@@ -5,13 +5,21 @@
     <key>CFBundleExecutable</key><string>DDLReminder</string>
     <key>CFBundleName</key><string>拾期</string>
     <key>CFBundleDisplayName</key><string>拾期</string>
-    <key>CFBundleVersion</key><string>4</string>
-    <key>CFBundleShortVersionString</key><string>1.1.2</string>
+    <key>CFBundleVersion</key><string>5</string>
+    <key>CFBundleShortVersionString</key><string>1.2.0</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>LSMinimumSystemVersion</key><string>13.0</string>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSPrincipalClass</key><string>NSApplication</string>
+    <key>NSRemindersFullAccessUsageDescription</key><string>将 DDL 同步到「拾期 · DDL」列表，并同步完成状态。Sync deadlines and completion with the Shiqi DDL list in Reminders.</string>
+    <key>NSRemindersUsageDescription</key><string>将 DDL 同步到「拾期 · DDL」列表，并同步完成状态。Sync deadlines and completion with the Shiqi DDL list in Reminders.</string>
+    <key>CFBundleURLTypes</key>
+    <array><dict>
+        <key>CFBundleURLName</key><string>cn.shuning.ddlreminder.deadline</string>
+        <key>CFBundleURLSchemes</key><array><string>shiqi</string></array>
+        <key>CFBundleTypeRole</key><string>Viewer</string>
+    </dict></array>
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSExceptionDomains</key>
