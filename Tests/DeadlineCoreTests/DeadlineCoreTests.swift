@@ -97,6 +97,40 @@ final class DeadlineCoreTests: XCTestCase {
         XCTAssertFalse(message.body.contains("December 1"))
     }
 
+    func testCodexDeadlineHandoffKeepsPreciseAndDateOnlyDeadlines() throws {
+        let json = """
+        {"version":1,"items":[
+          {"id":"mail-homework-1","title":"Homework 1","course":"CIE6007","dueAt":"2026-10-19T23:59:00+08:00","hasTime":true,"evidence":"Due October 19 at 11:59 PM"},
+          {"id":"mail-team","title":"Project Team Registration","course":"CIE6006","dueAt":"2026-10-31","hasTime":false}
+        ]}
+        """
+        let items = try CodexDeadlineImport.parse(Data(json.utf8), timeZone: zone)
+        XCTAssertEqual(items.count, 2)
+        XCTAssertEqual(items[0].dueDate, date("2026-10-19T23:59:00+08:00"))
+        XCTAssertTrue(items[0].hasTime)
+        XCTAssertEqual(items[1].dueDate, date("2026-10-31T00:00:00+08:00"))
+        XCTAssertFalse(items[1].hasTime)
+        XCTAssertEqual(items[1].source, .outlook)
+        XCTAssertEqual(items, try CodexDeadlineImport.parse(Data(json.utf8), timeZone: zone))
+    }
+
+    func testCodexDeadlineHandoffRejectsInvalidDate() {
+        let json = """
+        {"version":1,"items":[{"title":"Registration","dueAt":"2026-02-30","hasTime":false}]}
+        """
+        XCTAssertThrowsError(try CodexDeadlineImport.parse(Data(json.utf8), timeZone: zone))
+    }
+
+    func testCodexHandoffRecognizesExistingCourseDeadline() {
+        let existing = Deadline(title: "CIE6006 Project Team Registration", course: "CIE6006:Data Analytics_L02",
+                                dueDate: date("2026-10-31T00:00:00+08:00"), hasTime: false, source: .manual)
+        let incoming = Deadline(title: "Project Team Registration", course: "CIE6006",
+                                dueDate: existing.dueDate, hasTime: false, source: .outlook)
+        XCTAssertTrue(CodexDeadlineImport.matchesExisting(incoming, existing: existing, timeZone: zone))
+        let other = Deadline(title: "Project Team Registration", course: "CIE6007", dueDate: existing.dueDate, hasTime: false)
+        XCTAssertFalse(CodexDeadlineImport.matchesExisting(other, existing: existing, timeZone: zone))
+    }
+
     func testUTCConvertsToBeijingWithoutShiftingInstant() throws {
         let result = try ICalendarParser().parse(feed(event("UID:a\r\nSUMMARY:Homework\r\nDTSTART:20261009T155900Z")))
         XCTAssertEqual(result.deadlines[0].dueDate, date("2026-10-09T23:59:00+08:00"))
@@ -425,6 +459,9 @@ final class DeadlineCoreTests: XCTestCase {
     }
 
     static var allTests = [
+        ("Codex 接口识别现有课程任务", testCodexHandoffRecognizesExistingCourseDeadline),
+        ("Codex 本机接口日期与时间", testCodexDeadlineHandoffKeepsPreciseAndDateOnlyDeadlines),
+        ("Codex 本机接口拒绝无效日期", testCodexDeadlineHandoffRejectsInvalidDate),
         ("Outlook 嵌套 MIME 邮件导入", testOutlookEMLImportReadsNestedMultipartWithoutAttachment),
         ("Outlook EML 文件导入", testOutlookEMLImportReadsMultipartTextAndStableIdentity),
         ("Outlook 邮件日期和具体时间", testOutlookMailExtractsDateOnlyAndPreciseTimeWithoutGuessing),

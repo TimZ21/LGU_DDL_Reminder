@@ -59,10 +59,11 @@ final class AppStore: ObservableObject {
 
     func start() async {
         guard !started else { return }; started = true
+        importCodexInbox()
         if !isDemo { notificationStatus = await notifications.authorization(); reschedule() }
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                guard let self else { return }; self.now = Date()
+                guard let self else { return }; self.now = Date(); self.importCodexInbox()
                 if !self.isDemo { self.reschedule() }
                 if self.isConnected, !self.isSyncing,
                    self.lastAttempt == nil || self.now.timeIntervalSince(self.lastAttempt!) >= Double(self.preferences.syncMinutes * 60) {
@@ -160,6 +161,44 @@ final class AppStore: ObservableObject {
         }
         save(); reschedule()
         notice = t("已从 Outlook 添加 \(count) 个截止日期。", "Added \(count) deadlines from Outlook.")
+    }
+    func importCodexInbox() {
+        guard !isDemo, canPersist else { return }
+        do {
+            for file in try CodexInbox.pending() {
+                let items: [Deadline]
+                do {
+                    items = try CodexDeadlineImport.parse(Data(contentsOf: file), timeZone: preferences.timeZone)
+                } catch {
+                    try? CodexInbox.reject(file)
+                    errorMessage = t("Codex 导入文件 \(file.lastPathComponent) 未能处理：\(error.localizedDescription)",
+                                     "Could not process Codex import \(file.lastPathComponent): \(error.localizedDescription)")
+                    continue
+                }
+                do {
+                    var updated = snapshot
+                    var existing = Set(updated.deadlines.map(\.id))
+                    var added: [Deadline] = []
+                    for item in items {
+                        guard existing.insert(item.id).inserted,
+                              !(updated.deadlines + added).contains(where: {
+                                  CodexDeadlineImport.matchesExisting(item, existing: $0, timeZone: preferences.timeZone)
+                              }) else { continue }
+                        added.append(item)
+                    }
+                    updated.deadlines.append(contentsOf: added)
+                    try LocalStorage.save(updated)
+                    snapshot = updated
+                    try FileManager.default.removeItem(at: file)
+                    if !added.isEmpty {
+                        reschedule()
+                        notice = t("Codex 已补充 \(added.count) 个 Outlook 截止日期。", "Codex added \(added.count) Outlook deadlines.")
+                    }
+                } catch {
+                    errorMessage = t("Codex 导入暂未完成：\(error.localizedDescription)", "Codex import is pending: \(error.localizedDescription)")
+                }
+            }
+        } catch { errorMessage = error.localizedDescription }
     }
     func delete(_ item: Deadline) { snapshot.deadlines.removeAll { $0.id == item.id }; save(); reschedule() }
     func updatePreferences(_ value: Preferences) {

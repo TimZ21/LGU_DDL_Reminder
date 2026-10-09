@@ -183,7 +183,7 @@ struct DashboardView: View {
         .onReceive(NotificationCenter.default.publisher(for: .showDeadlineWindow)) { _ in
             openWindow(id: "main"); NSApp.activate(ignoringOtherApps: true)
         }
-        .onChange(of: scenePhase) { phase in if phase == .active { Task { await store.refreshPermission() } } }
+        .onChange(of: scenePhase) { phase in if phase == .active { store.importCodexInbox(); Task { await store.refreshPermission() } } }
     }
 
     private var sidebar: some View {
