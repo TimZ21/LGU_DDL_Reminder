@@ -52,6 +52,7 @@ struct DeadlineDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let itemID: String
     @State private var showEdit = false
+    @State private var showCourseEdit = false
     @State private var confirmDelete = false
     private var item: Deadline? { store.snapshot.deadlines.first { $0.id == itemID } }
     var body: some View {
@@ -59,7 +60,8 @@ struct DeadlineDetailView: View {
             if let item {
                 HStack { Text(store.t("事项详情", "Task details")).font(.headline); Spacer(); Button(store.t("关闭", "Close")) { dismiss() }.keyboardShortcut(.cancelAction) }
                 Text(item.title).font(.system(size: 23, weight: .semibold)).textSelection(.enabled)
-                if !item.course.isEmpty { Text(item.course).foregroundStyle(.secondary).textSelection(.enabled) }
+                Text(item.course.isEmpty ? store.t("课程未标注", "Course not specified") : item.course)
+                    .foregroundStyle(.secondary).textSelection(.enabled)
                 VStack(alignment: .leading, spacing: 10) {
                     Label(store.format(item.dueDate, pattern: item.hasTime ? "yyyy年M月d日 EEEE HH:mm:ss" : "yyyy年M月d日 EEEE"), systemImage: "calendar")
                         .font(.system(size: 18, weight: .medium)).textSelection(.enabled)
@@ -77,17 +79,22 @@ struct DeadlineDetailView: View {
                     if item.source == .manual {
                         Button(store.t("编辑", "Edit")) { showEdit = true }
                         Button(store.t("删除", "Delete"), role: .destructive) { confirmDelete = true }
+                    } else {
+                        Button(item.course.isEmpty ? store.t("设置课程", "Set course") : store.t("修改课程", "Change course")) {
+                            showCourseEdit = true
+                        }
                     }
                     Spacer()
                     if let link = item.link { Link(store.t("在 Blackboard 查看", "View in Blackboard"), destination: link) }
                 }
                 if item.source != .manual {
-                    Text(store.t("日历事项会随来源更新；若时间缺失或发布在公告中，可手动添加一个 DDL。", "Calendar items update from their source. Add a manual deadline when the time is missing or only listed in announcements."))
+                    Text(store.t("课程名称可在本机补填，自动同步后仍会保留。若时间缺失或发布在公告中，可手动添加一个 DDL。", "You can label the course locally; it stays after sync. Add a manual deadline when the time is missing or only listed in announcements."))
                         .font(.caption).foregroundStyle(.secondary)
                 }
             } else { Text(store.t("此事项已被移除。", "This item has been removed.")); Button(store.t("关闭", "Close")) { dismiss() } }
         }.padding(26).frame(width: 570).tint(Palette.controlAccent)
             .sheet(isPresented: $showEdit) { if let item { DeadlineEditor(item: item).environmentObject(store) } }
+            .sheet(isPresented: $showCourseEdit) { if let item { CourseEditor(item: item).environmentObject(store) } }
             .alert(store.t("删除此截止日期？", "Delete this deadline?"), isPresented: $confirmDelete) {
                 Button(store.t("取消", "Cancel"), role: .cancel) {}
                 Button(store.t("删除", "Delete"), role: .destructive) { if let item { store.delete(item) }; dismiss() }
@@ -95,5 +102,31 @@ struct DeadlineDetailView: View {
     }
     private func sourceName(_ source: DeadlineSource) -> String {
         switch source { case .blackboard: return store.t("Blackboard 自动同步", "Synced from Blackboard"); case .file: return store.t("日历文件（不会自动更新）", "Calendar file (no automatic updates)"); case .manual: return store.t("手动添加", "Added manually") }
+    }
+}
+
+private struct CourseEditor: View {
+    @EnvironmentObject private var store: AppStore
+    @Environment(\.dismiss) private var dismiss
+    let item: Deadline
+    @State private var course = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text(store.t("设置课程", "Set course")).font(.system(size: 21, weight: .semibold))
+            Text(item.title).font(.callout).foregroundStyle(.secondary)
+            TextField(store.t("课程名称或代码", "Course name or code"), text: $course)
+                .textFieldStyle(.roundedBorder)
+            HStack {
+                Button(store.t("取消", "Cancel")) { dismiss() }.keyboardShortcut(.cancelAction)
+                Spacer()
+                Button(store.t("保存", "Save")) {
+                    store.setCourse(course, for: item.id)
+                    dismiss()
+                }.buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.defaultAction)
+                    .disabled(course.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }.padding(26).frame(width: 430).tint(Palette.controlAccent)
+            .onAppear { course = item.course }
     }
 }

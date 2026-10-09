@@ -6,6 +6,8 @@ public struct Deadline: Identifiable, Codable, Equatable {
     public var id: String
     public var title: String
     public var course: String
+    // Non-nil after the user labels a synced item; keeps the feed's course for identity matching.
+    public var sourceCourse: String?
     public var notes: String
     public var dueDate: Date
     public var hasTime: Bool
@@ -16,7 +18,7 @@ public struct Deadline: Identifiable, Codable, Equatable {
     public init(id: String = UUID().uuidString, title: String, course: String = "", notes: String = "",
                 dueDate: Date, hasTime: Bool = true, source: DeadlineSource = .manual,
                 link: URL? = nil, completed: Bool = false) {
-        self.id = id; self.title = title; self.course = course; self.notes = notes
+        self.id = id; self.title = title; self.course = course; self.sourceCourse = nil; self.notes = notes
         self.dueDate = dueDate; self.hasTime = hasTime; self.source = source
         self.link = link; self.completed = completed
     }

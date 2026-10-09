@@ -254,6 +254,25 @@ final class DeadlineCoreTests: XCTestCase {
         XCTAssertEqual(ReminderPlanner.plans(for: next, preferences: Preferences(), now: now).count, 4)
     }
 
+    func testLocalCourseLabelSurvivesSyncAndUIDChanges() throws {
+        let now = date("2026-10-09T00:00:00Z")
+        func calendar(_ uid: String) -> ParsedCalendar {
+            try! ICalendarParser().parse(feed(event("UID:\(uid)\r\nSUMMARY:Problem set 1\r\nDTSTART:20261012T120000Z")), now: now)
+        }
+        var labeled = calendar("first").deadlines[0]
+        labeled.sourceCourse = labeled.course
+        labeled.course = "MAT2040"
+        var snapshot = Snapshot(); snapshot.deadlines = [labeled]
+        let restored = try JSONDecoder().decode(Snapshot.self, from: JSONEncoder().encode(snapshot))
+        let first = DeadlineMerger.merge(previous: restored.deadlines, parsed: calendar("second"), source: .blackboard)
+        XCTAssertEqual(first.count, 1)
+        XCTAssertEqual(first[0].course, "MAT2040")
+        XCTAssertEqual(first[0].sourceCourse, "")
+        let second = DeadlineMerger.merge(previous: first, parsed: calendar("third"), source: .blackboard)
+        XCTAssertEqual(second.count, 1)
+        XCTAssertEqual(second[0].course, "MAT2040")
+    }
+
     func testLegacySavedPreferencesMigrateWithoutLosingTasks() throws {
         var original = Snapshot()
         original.preferences.syncMinutes = 30
@@ -340,6 +359,7 @@ final class DeadlineCoreTests: XCTestCase {
         ("文件与在线导入共享完成状态", testFileAndSubscriptionImportsShareCompletionWithoutDuplicates),
         ("重复事项与歧义任务隔离", testCompletionMatchingKeepsRecurrencesAndAmbiguousTasksSeparate),
         ("手动恢复待办后再次同步", testExplicitlyMarkingIncompleteSurvivesAnotherUIDChange),
+        ("本机课程标注在同步后保留", testLocalCourseLabelSurvivesSyncAndUIDChanges),
         ("旧版数据与语言设置迁移", testLegacySavedPreferencesMigrateWithoutLosingTasks),
         ("语言切换保留提醒时刻", testLanguageChangePreservesReminderInstantsAndIdentifiers),
         ("深圳标签与实际时区", testShenzhenLabelKeepsExistingTimeZoneAndDates),

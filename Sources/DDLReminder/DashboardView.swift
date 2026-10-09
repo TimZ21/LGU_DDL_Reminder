@@ -324,7 +324,7 @@ struct DeadlineRow: View {
                     VStack(alignment: .leading, spacing: 7) {
                         Text(item.title).font(.system(size: 14, weight: .medium)).strikethrough(item.completed).lineLimit(2)
                         HStack(spacing: 7) {
-                            Text(item.course.isEmpty ? (item.source == .manual ? store.t("手动添加", "Added manually") : store.t("Blackboard 日历事项", "Blackboard calendar item")) : item.course)
+                            Text(item.course.isEmpty ? (item.source == .manual ? store.t("手动添加", "Added manually") : store.t("课程未标注", "Course not specified")) : item.course)
                             Text("·")
                             Text(item.hasTime ? store.format(item.dueDate, pattern: "HH:mm") : store.t("具体时间待确认", "Exact time to confirm"))
                         }.font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)

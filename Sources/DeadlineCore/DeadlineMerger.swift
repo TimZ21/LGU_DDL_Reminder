@@ -9,7 +9,7 @@ public enum DeadlineMerger {
 
         init(_ item: Deadline) {
             title = item.title.trimmingCharacters(in: .whitespacesAndNewlines)
-            course = item.course.trimmingCharacters(in: .whitespacesAndNewlines)
+            course = (item.sourceCourse ?? item.course).trimmingCharacters(in: .whitespacesAndNewlines)
             dueDate = item.dueDate
             hasTime = item.hasTime
         }
@@ -56,6 +56,10 @@ public enum DeadlineMerger {
                 let prior = previous[priorIndex]
                 // Completion is a local user choice, including after a source reschedule.
                 item.completed = prior.completed
+                if prior.sourceCourse != nil {
+                    item.sourceCourse = item.course
+                    item.course = prior.course
+                }
                 if source == .file && prior.source == .blackboard {
                     // Importing the same event from a file must not detach it from sync.
                     item.id = prior.id

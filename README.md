@@ -101,6 +101,7 @@ SwiftUI · macOS 13+ · 中文 / English · MIT
 | 切换语言 | 「提醒与设置」→「语言 / Language」→ 简体中文或 English；即时生效并保存 |
 | 添加截止日期 | 点击「添加 DDL」；填写任务、课程、日期、时间和备注 |
 | 查看详情 | 点击任务行，查看完整时间与备注 |
+| 补填课程 | 日历未提供课程时，点击任务行 →「设置课程」；课程标注保存在本机，同步后保留 |
 | 标记完成 | 点击任务左侧圆圈，或在详情中标记完成；状态仅保存在本机 |
 | 导入日历文件 | 点击主窗口右上角导入图标，选择小于 5 MB 的 UTF-8 `.ics` 文件 |
 | 手动同步 | 点击「立即同步」，或使用菜单栏的同步按钮 |
@@ -274,6 +275,7 @@ Closing the main window keeps Shiqi running and syncing in the menu bar. **Quit*
 | Change language | **Reminders & settings → 语言 / Language → 简体中文 / English**; applies immediately and persists |
 | Add a deadline | Click **Add deadline**; enter the task, course, date, time, and notes |
 | View details | Click a task row to see its full time and notes |
+| Label a course | If the calendar omits it, open the task and choose **Set course**; the local label remains after sync |
 | Mark complete | Click the circle beside a task, or mark it complete in details; completion is stored locally |
 | Import a calendar | Use the import icon at the top right; choose a UTF-8 `.ics` file smaller than 5 MB |
 | Refresh manually | Click **Sync now** or the menu bar's sync button |

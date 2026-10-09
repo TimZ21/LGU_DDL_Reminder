@@ -136,6 +136,17 @@ final class AppStore: ObservableObject {
         guard let i = snapshot.deadlines.firstIndex(where: { $0.id == item.id }) else { return }
         snapshot.deadlines[i].completed.toggle(); save(); reschedule()
     }
+    func setCourse(_ value: String, for itemID: String) {
+        guard let index = snapshot.deadlines.firstIndex(where: { $0.id == itemID }),
+              snapshot.deadlines[index].source != .manual else { return }
+        let course = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !course.isEmpty else { return }
+        if snapshot.deadlines[index].sourceCourse == nil {
+            snapshot.deadlines[index].sourceCourse = snapshot.deadlines[index].course
+        }
+        snapshot.deadlines[index].course = course
+        save(); reschedule()
+    }
     func upsert(_ item: Deadline) {
         if let index = snapshot.deadlines.firstIndex(where: { $0.id == item.id }) { snapshot.deadlines[index] = item }
         else { snapshot.deadlines.append(item) }
