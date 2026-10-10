@@ -4,9 +4,13 @@
 
 Free, open-source software for LGU students: a lightweight native macOS deadline reminder for the campus Blackboard.
 
+iOS 开发版的环境安装、运行和使用说明见 **[iOS 中英双语指南](iOS/README.md)**。手机端与 macOS 版独立，共用核心逻辑。验证状态见该指南。
+
+For the iOS development version, see the **[bilingual iOS guide](iOS/README.md)** for setup, usage, and validation status. Mobile and Mac versions share core logic and keep separate app data.
+
 **[中文说明](#zh-cn) · [English guide](#en)**
 
-SwiftUI · macOS 13+ · 中文 / English · MIT
+SwiftUI · macOS 13+ · iOS 17+（开发版 / in development）· 中文 / English · MIT
 
 <a id="zh-cn"></a>
 
@@ -50,7 +54,7 @@ SwiftUI · macOS 13+ · 中文 / English · MIT
 2. 将 `拾期.app` 拖入「应用程序」文件夹。
 3. 从「应用程序」打开拾期，按下方说明连接 Blackboard 和启用通知。
 
-当前构建脚本使用本地 **ad-hoc 签名**，不包含 Developer ID 签名或 Apple 公证。下载到另一台 Mac 后可能被系统阻止打开；如没有已签名、公证的发布包，可按方式二自行构建。源码仓库忽略 `dist/`，下载源码 ZIP 不会附带已编译的应用。
+请查看具体 Release 的签名说明：旧版 1.1.2 和默认开发构建使用 **ad-hoc 签名**，尚未经过 Apple 公证，下载后可能被系统阻止打开。正式发布脚本支持 Developer ID 签名与 Apple 公证，但必须先配置有效证书和公证凭据；脚本配置完成不代表现有安装包已公证。源码仓库忽略 `dist/`，下载源码 ZIP 不会附带已编译的应用。
 
 #### 方式二：从源码构建
 
@@ -75,6 +79,8 @@ SwiftUI · macOS 13+ · 中文 / English · MIT
    ```
 
 构建脚本直接调用 `swiftc`，无需下载第三方依赖，并按当前 Mac 的 CPU 架构生成应用。请运行打包后的 `.app`，以便系统通知识别应用身份。
+
+安装完整 Xcode 后，macOS 脚本仍优先使用可用的 Command Line Tools；iOS 脚本独立选择 Xcode。需要改用其他工具链时，可显式设置 `DEVELOPER_DIR`。
 
 ### 首次使用：连接 Blackboard
 
@@ -179,7 +185,7 @@ Resources/                 Info.plist、品牌素材与示例日历
 scripts/                   构建、测试、图标生成与网络诊断
 ```
 
-测试使用 XCTest；仅有 Command Line Tools、无法使用 XCTest 时，脚本使用仓库内的轻量测试运行器。当前 35 项测试覆盖日期转换、夏令时、全天事项、重复例外、提醒计划、同步合并、UID 变化后的完成状态、跨来源重导入、旧版数据迁移、语言设置和课表导入。
+测试使用 XCTest；仅有 Command Line Tools、无法使用 XCTest 时，脚本使用仓库内的轻量测试运行器。当前 42 项核心测试覆盖日期转换、夏令时、全天事项、重复例外、提醒计划、同步合并、UID 变化后的完成状态、跨来源重导入、旧版数据迁移、语言设置、课表导入、Outlook 邮件解析与提醒事项同步。
 
 1.1.1 修复了部分日历每次导出生成新 UID，导致已完成事项变回待办的问题。优先按日历身份匹配；UID 改变时，仅在标题、课程、实际截止时刻和时间类型均一致且双方唯一时匹配，避免误把其他任务标记完成。文件导入与在线同步共享这套规则；重复事件的各次事项分别保存完成状态。
 
@@ -208,7 +214,36 @@ DDL_SDK_PATH="/path/to/compatible/MacOSX.sdk" bash scripts/build.sh
 
 #### GitHub 发布
 
-源码、测试、脚本和文档提交到仓库；`dist/`、构建缓存、日志和个人日历数据由 `.gitignore` 排除。可将构建出的 `dist/拾期.zip` 单独上传到 GitHub Release，并注明版本、架构与签名/公证状态。不要把整个工作目录打包后当作源码发布。面向其他 Mac 分发时，建议采用 Developer ID 签名和 Apple 公证；当前脚本不会自动执行这两步。
+源码、测试、脚本和文档提交到仓库；`dist/`、构建缓存、日志和个人日历数据由 `.gitignore` 排除。不要把整个工作目录打包后当作源码发布。未公证的候选安装包只放在草稿中；完成下面的签名、公证和验证流程后，再公开正式下载。
+
+#### 维护者：Developer ID 签名与 Apple 公证
+
+需要已加入 [Apple Developer Program](https://developer.apple.com/programs/enroll/) 的账户。免费 Personal Team 不能签署面向公众分发的 Developer ID 应用。账户持有人可在 Xcode 的 Settings → Accounts → Manage Certificates 创建 **Developer ID Application** 证书，或依照 [Apple 证书说明](https://developer.apple.com/help/account/certificates/create-developer-id-certificates/) 从开发者网站创建并导入。证书及其私钥必须同时在本机钥匙串中。ZIP 分发无需 Developer ID Installer 证书。
+
+1. 在终端确认可用身份：
+
+   ```sh
+   security find-identity -v -p codesigning
+   ```
+
+2. 创建 Apple 账户的 App 专用密码，然后在自己的终端交互式保存公证凭据。按提示输入 Apple 账户、Team ID 和 App 专用密码；不要把密码写入仓库、命令行参数或聊天。
+
+   ```sh
+   DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+     xcrun notarytool store-credentials shiqi-notary
+   ```
+
+3. 提交待发布源码，确认工作区干净后运行：
+
+   ```sh
+   DDL_SIGNING_IDENTITY='Developer ID Application: Your Name (TEAMID)' \
+   DDL_NOTARY_PROFILE='shiqi-notary' \
+     bash scripts/release-macos.sh
+   ```
+
+脚本依次执行核心测试、Developer ID 签名、Hardened Runtime 与安全时间戳、公证提交、等待 **Accepted**、向应用附加公证票据、Gatekeeper 验证、重新打包与解压验证。任一步失败都会停止；不会降级为 ad-hoc 正式发布包。输出位于 `dist/releases/<版本>/`，包含 `Shiqi-<版本>-macOS-<架构>.zip`、`SHA256SUMS.txt` 和可追溯源码提交的 `BUILD-INFO.txt`。只将这些成功验证的文件上传到相同版本的 GitHub Release。
+
+Hardened Runtime 的 EventKit 资源权限保留可选提醒事项同步；没有打开 App Sandbox，也没有放宽网络证书验证。初次启动时用户仍可能看到正常的互联网下载确认，以及通知、钥匙串和提醒事项权限提示。建议在另一台 Mac 上再次验证下载、解压、拖入「应用程序」及首次打开。公证日志位于忽略提交的 `dist/macos-notary.*`。[Apple 公证流程](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow)
 
 ### 许可证与品牌素材
 
@@ -258,7 +293,7 @@ If an app package is available on the repository's **Releases** page:
 2. Drag `拾期.app` into **Applications**.
 3. Open Shiqi from Applications, then connect Blackboard and enable notifications as described below.
 
-The current build script uses a local **ad-hoc signature**, without Developer ID signing or Apple notarization. A downloaded build may be blocked on another Mac. If a signed, notarized release is unavailable, build from source using Option 2. The source repository ignores `dist/`; downloading its source ZIP does not include a compiled app.
+Check the signing status of the specific Release. Version 1.1.2 and default development builds use **ad-hoc signatures** without Apple notarization, so macOS may block their first launch. The release script supports Developer ID signing and notarization after valid certificates and credentials are configured; configuring a script does not notarize existing packages. The source repository ignores `dist/`; downloading its source ZIP does not include a compiled app.
 
 #### Option 2: Build from source
 
@@ -283,6 +318,8 @@ The current build script uses a local **ad-hoc signature**, without Developer ID
    ```
 
 The script invokes `swiftc` directly, downloads no third-party dependencies, and builds for the host Mac's architecture. Run the packaged `.app` so macOS notifications can identify the application.
+
+After installing full Xcode, Mac scripts still prefer available Command Line Tools; iOS scripts select Xcode separately. Set `DEVELOPER_DIR` explicitly to choose another toolchain.
 
 ### First use: Connect Blackboard
 
@@ -387,7 +424,7 @@ Resources/                 Info.plist, branding assets, sample calendar
 scripts/                   Build, tests, icon generation, network diagnostics
 ```
 
-Tests use XCTest. When only Command Line Tools are available and XCTest is missing, the script uses the repository's lightweight test runner. The current 25 cases cover date conversion, daylight saving, date-only events, recurrence exceptions, reminder planning, sync merging, completion with changing UIDs, cross-source reimports, legacy data migration, and language settings.
+Tests use XCTest. When only Command Line Tools are available and XCTest is missing, the script uses the repository's lightweight test runner. The current 32 cases cover date conversion, daylight saving, date-only events, recurrence exceptions, reminder planning, sync merging, completion with changing UIDs, cross-source reimports, legacy data migration, Reminders sync, and language settings.
 
 Version 1.1.1 fixes completed items becoming pending when a calendar generates new UIDs on each export. Calendar identity matches take priority. When a UID changes, matching requires an identical title, course, deadline instant, and time kind that uniquely identify an item in both sets. This avoids completing a different task by mistake. File imports and subscription sync share these rules; recurring occurrences retain separate completion states.
 
@@ -416,7 +453,36 @@ A local Apple `nscurl --ats-diagnostics` check on 2026-10-09 found that `bb.cuhk
 
 #### Publishing on GitHub
 
-Commit source, tests, scripts, and documentation. `.gitignore` excludes `dist/`, build caches, logs, and personal calendar data. Upload the generated `dist/拾期.zip` separately as a GitHub Release asset, stating its version, architecture, and signing/notarization status. Do not publish a ZIP of the entire working directory as source. Developer ID signing and Apple notarization are recommended for distributing to other Macs; the current script performs neither automatically.
+Commit source, tests, scripts, and documentation. `.gitignore` excludes `dist/`, build caches, logs, and personal calendar data. Do not publish a ZIP of the entire working directory as source. Keep unnotarized candidate packages in a draft, and publish downloads after the signing, notarization, and verification process below succeeds.
+
+#### Maintainers: Developer ID signing and Apple notarization
+
+Use an account enrolled in the [Apple Developer Program](https://developer.apple.com/programs/enroll/). A free Personal Team cannot sign Developer ID apps for public distribution. The Account Holder can create a **Developer ID Application** certificate using Xcode Settings → Accounts → Manage Certificates, or follow [Apple's certificate instructions](https://developer.apple.com/help/account/certificates/create-developer-id-certificates/) to create and import one. Both the certificate and its private key must be in the local Keychain. ZIP distribution does not need a Developer ID Installer certificate.
+
+1. List available signing identities:
+
+   ```sh
+   security find-identity -v -p codesigning
+   ```
+
+2. Create an app-specific password for the Apple account, then save notarization credentials interactively in your own terminal. Enter your Apple account, Team ID, and app-specific password at the prompts. Keep passwords out of source files, command-line arguments, and chat.
+
+   ```sh
+   DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+     xcrun notarytool store-credentials shiqi-notary
+   ```
+
+3. Commit the release source, ensure the working tree is clean, and run:
+
+   ```sh
+   DDL_SIGNING_IDENTITY='Developer ID Application: Your Name (TEAMID)' \
+   DDL_NOTARY_PROFILE='shiqi-notary' \
+     bash scripts/release-macos.sh
+   ```
+
+The script runs core tests, signs with Developer ID using Hardened Runtime and a secure timestamp, submits for notarization, waits for **Accepted**, staples the ticket to the app, checks Gatekeeper, repackages, and verifies the extracted archive. It stops on failure and never falls back to an ad-hoc public package. Successful output is in `dist/releases/<version>/`: `Shiqi-<version>-macOS-<architecture>.zip`, `SHA256SUMS.txt`, and `BUILD-INFO.txt` recording the exact source commit. Upload only these successfully verified files to the matching GitHub Release.
+
+The Hardened Runtime EventKit resource entitlement preserves optional Reminders access. App Sandbox is not enabled and network certificate validation is not weakened. Users may still see the normal first-download confirmation and notification, Keychain, and Reminders permission prompts. Verify downloading, extracting, moving to Applications, and first launch on another Mac before distribution. Notarization logs stay in ignored `dist/macos-notary.*` directories. [Apple notarization workflow](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow)
 
 ### License and branding
 

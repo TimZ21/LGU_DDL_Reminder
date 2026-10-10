@@ -5,7 +5,7 @@
     <key>CFBundleExecutable</key><string>DDLReminder</string>
     <key>CFBundleName</key><string>拾期</string>
     <key>CFBundleDisplayName</key><string>拾期</string>
-    <key>CFBundleVersion</key><string>5</string>
+    <key>CFBundleVersion</key><string>6</string>
     <key>CFBundleShortVersionString</key><string>1.2.0</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>

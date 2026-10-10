@@ -13,7 +13,7 @@ struct ReminderSettingsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     VStack(alignment: .leading, spacing: 14) {
-                        Text(store.t("让重要的时间，提前一点到达", "A little notice goes a long way")).font(.headline)
+                        Text(store.t("通知提醒", "Notifications")).font(.headline)
                         Toggle(store.t("发送系统通知", "Send system notifications"), isOn: $preferences.notificationsEnabled)
                         HStack(spacing: 16) {
                             ForEach([1440, 180, 60, 30, 10, 0], id: \.self) { minutes in

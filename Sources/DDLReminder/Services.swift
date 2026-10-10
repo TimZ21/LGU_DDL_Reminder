@@ -1,4 +1,6 @@
+#if os(macOS)
 import AppKit
+#endif
 import Foundation
 import Security
 import UserNotifications
@@ -109,8 +111,14 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
         Task { @MainActor in
+            #if os(macOS)
             NSApp.activate(ignoringOtherApps: true)
+            #endif
+            #if os(iOS)
+            NotificationCenter.default.post(name: .showDeadlineWindow, object: response.notification.request.content.userInfo["deadlineID"] as? String)
+            #else
             NotificationCenter.default.post(name: .showDeadlineWindow, object: nil)
+            #endif
         }
         completionHandler()
     }

@@ -1,0 +1,374 @@
+// !$*UTF8*$!
+{
+archiveVersion = 1; classes = {}; objectVersion = 56;
+objects = {
+A557B342968D6FD5155DB174 = {
+isa = PBXFileReference;
+lastKnownFileType = sourcecode.swift; path = "Sources/ShiqiApp.swift"; sourceTree = "<group>";
+};
+BB8E9E7E71C4B9E40F892FC9 = {
+isa = PBXFileReference;
+lastKnownFileType = sourcecode.swift; path = "Sources/MobileStore.swift"; sourceTree = "<group>";
+};
+AC7591DE3217DFF9B10A12BB = {
+isa = PBXFileReference;
+lastKnownFileType = sourcecode.swift; path = "Sources/MobileDashboardView.swift"; sourceTree = "<group>";
+};
+BE4BE160DC39FC9DA1089472 = {
+isa = PBXFileReference;
+lastKnownFileType = sourcecode.swift; path = "Sources/MobileForms.swift"; sourceTree = "<group>";
+};
+AAB3DFEDC8C6AAB94E245476 = {
+isa = PBXFileReference;
+lastKnownFileType = sourcecode.swift; path = "Sources/MobileSettingsView.swift"; sourceTree = "<group>";
+};
+4C0C22F302186A437D8E4DC2 = {
+isa = PBXFileReference;
+lastKnownFileType = sourcecode.swift; path = "../Sources/DDLReminder/Services.swift"; sourceTree = "<group>";
+};
+118CA71FC72F495E0A818DF2 = {
+isa = PBXFileReference;
+lastKnownFileType = sourcecode.swift; path = "../Sources/DDLReminder/AppleRemindersService.swift"; sourceTree = "<group>";
+};
+D3592BE6F0CF2C15A0119552 = {
+isa = PBXFileReference;
+lastKnownFileType = sourcecode.swift; path = "../Tests/DeadlineCoreTests/DeadlineCoreTests.swift"; sourceTree = "<group>";
+};
+A600FEC2B727B2A8F1E06D48 = {
+isa = PBXFileReference;
+lastKnownFileType = sourcecode.swift; path = "UITests/MobileUITests.swift"; sourceTree = "<group>";
+};
+D2BAA48C14157B374334CB7C = {
+isa = PBXFileReference;
+lastKnownFileType = folder.assetcatalog; path = "Resources/Assets.xcassets"; sourceTree = "<group>";
+};
+1B578D4D9C036F5F6929AF6F = {
+isa = PBXFileReference;
+lastKnownFileType = text.plist.xml; path = "Resources/Info.plist"; sourceTree = "<group>";
+};
+845F65209D19F1E91A3C573D = {
+isa = PBXFileReference;
+explicitFileType = wrapper.application; includeInIndex = 0; path = "Shiqi.app"; sourceTree = BUILT_PRODUCTS_DIR;
+};
+2FCFF171946EE635CB5814B4 = {
+isa = PBXFileReference;
+explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "DeadlineCoreIOSTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR;
+};
+EB514C99415FB0A070746FE6 = {
+isa = PBXFileReference;
+explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "ShiqiUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR;
+};
+692092DE1C1C8624E142B71D = {
+isa = PBXGroup;
+children = (845F65209D19F1E91A3C573D,2FCFF171946EE635CB5814B4,EB514C99415FB0A070746FE6,); name = Products; sourceTree = "<group>";
+};
+CAEE220ED3D0CE5D599C3E39 = {
+isa = PBXGroup;
+children = (A557B342968D6FD5155DB174,BB8E9E7E71C4B9E40F892FC9,AC7591DE3217DFF9B10A12BB,BE4BE160DC39FC9DA1089472,AAB3DFEDC8C6AAB94E245476,4C0C22F302186A437D8E4DC2,118CA71FC72F495E0A818DF2,D2BAA48C14157B374334CB7C,1B578D4D9C036F5F6929AF6F,D3592BE6F0CF2C15A0119552,A600FEC2B727B2A8F1E06D48,692092DE1C1C8624E142B71D,); sourceTree = "<group>";
+};
+582681C2EAE02B3F3D399C0C = {
+isa = XCLocalSwiftPackageReference;
+relativePath = ..;
+};
+C454941A62E0F705396A1B98 = {
+isa = XCSwiftPackageProductDependency;
+package = 582681C2EAE02B3F3D399C0C; productName = DeadlineCore;
+};
+19940B982023484FED21518C = {
+isa = PBXBuildFile;
+productRef = C454941A62E0F705396A1B98;
+};
+B2220788A51E9BBE92F20447 = {
+isa = XCSwiftPackageProductDependency;
+package = 582681C2EAE02B3F3D399C0C; productName = DeadlineCore;
+};
+54638E891B1A2F7CD0B7E22F = {
+isa = PBXBuildFile;
+productRef = B2220788A51E9BBE92F20447;
+};
+C4E9D182D7E463F9A3385058 = {
+isa = PBXBuildFile;
+fileRef = A557B342968D6FD5155DB174;
+};
+E0FB1BD0BB494FD403FD2005 = {
+isa = PBXBuildFile;
+fileRef = BB8E9E7E71C4B9E40F892FC9;
+};
+A0EB2960B6DA9234A54A2BCD = {
+isa = PBXBuildFile;
+fileRef = AC7591DE3217DFF9B10A12BB;
+};
+90142248D0F57EBC5CD03119 = {
+isa = PBXBuildFile;
+fileRef = BE4BE160DC39FC9DA1089472;
+};
+8F4462ECDDBE65A9B5A8C1A3 = {
+isa = PBXBuildFile;
+fileRef = AAB3DFEDC8C6AAB94E245476;
+};
+1B245E26456FA13E3E59573A = {
+isa = PBXBuildFile;
+fileRef = 4C0C22F302186A437D8E4DC2;
+};
+61020887F7660A8809F514EB = {
+isa = PBXBuildFile;
+fileRef = 118CA71FC72F495E0A818DF2;
+};
+0E697CA0264912C296E4B69F = {
+isa = PBXSourcesBuildPhase;
+buildActionMask = 2147483647; files = (C4E9D182D7E463F9A3385058,E0FB1BD0BB494FD403FD2005,A0EB2960B6DA9234A54A2BCD,90142248D0F57EBC5CD03119,8F4462ECDDBE65A9B5A8C1A3,1B245E26456FA13E3E59573A,61020887F7660A8809F514EB,); runOnlyForDeploymentPostprocessing = 0;
+};
+C13758DEB186C09B7EB44697 = {
+isa = PBXFrameworksBuildPhase;
+buildActionMask = 2147483647; files = (19940B982023484FED21518C,); runOnlyForDeploymentPostprocessing = 0;
+};
+0B5B4F597AD3ACD2F70EAF10 = {
+isa = PBXBuildFile;
+fileRef = D2BAA48C14157B374334CB7C;
+};
+9C076AB791718F89AC66EF40 = {
+isa = PBXResourcesBuildPhase;
+buildActionMask = 2147483647; files = (0B5B4F597AD3ACD2F70EAF10,); runOnlyForDeploymentPostprocessing = 0;
+};
+B902F7C2327297FC583709E1 = {
+isa = PBXNativeTarget;
+buildConfigurationList = 70336279113C6D09893D9716; buildPhases = (0E697CA0264912C296E4B69F,C13758DEB186C09B7EB44697,9C076AB791718F89AC66EF40,); buildRules = (); dependencies = (); name = Shiqi; packageProductDependencies = (C454941A62E0F705396A1B98,); productName = Shiqi; productReference = 845F65209D19F1E91A3C573D; productType = "com.apple.product-type.application";
+};
+9704E73CD8D33043B81FAD48 = {
+isa = PBXBuildFile;
+fileRef = D3592BE6F0CF2C15A0119552;
+};
+E4351FFC21D675808B64C4CD = {
+isa = PBXSourcesBuildPhase;
+buildActionMask = 2147483647; files = (9704E73CD8D33043B81FAD48,); runOnlyForDeploymentPostprocessing = 0;
+};
+22B2F8E15BDA1F2780AE05A0 = {
+isa = PBXFrameworksBuildPhase;
+buildActionMask = 2147483647; files = (54638E891B1A2F7CD0B7E22F,); runOnlyForDeploymentPostprocessing = 0;
+};
+19A2B5683E10D853ADE95265 = {
+isa = PBXResourcesBuildPhase;
+buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;
+};
+683922E60D7DC1DA2C655046 = {
+isa = PBXContainerItemProxy;
+containerPortal = 98F54143AB4E86B28C3AFEE0; proxyType = 1; remoteGlobalIDString = B902F7C2327297FC583709E1; remoteInfo = Shiqi;
+};
+FA2DB8BDF6B432F718FD6844 = {
+isa = PBXTargetDependency;
+target = B902F7C2327297FC583709E1; targetProxy = 683922E60D7DC1DA2C655046;
+};
+03551B71F4545C12E375EFED = {
+isa = PBXNativeTarget;
+buildConfigurationList = 930019487CF97BC670DD7556; buildPhases = (E4351FFC21D675808B64C4CD,22B2F8E15BDA1F2780AE05A0,19A2B5683E10D853ADE95265,); buildRules = (); dependencies = (FA2DB8BDF6B432F718FD6844,); name = DeadlineCoreIOSTests; packageProductDependencies = (B2220788A51E9BBE92F20447,); productName = DeadlineCoreIOSTests; productReference = 2FCFF171946EE635CB5814B4; productType = "com.apple.product-type.bundle.unit-test";
+};
+A70A75A64B1A2AE9CDA8887F = {
+isa = PBXBuildFile;
+fileRef = A600FEC2B727B2A8F1E06D48;
+};
+A98273D5EDAC841B04670F94 = {
+isa = PBXSourcesBuildPhase;
+buildActionMask = 2147483647; files = (A70A75A64B1A2AE9CDA8887F,); runOnlyForDeploymentPostprocessing = 0;
+};
+D906D075C076C9BD34008345 = {
+isa = PBXFrameworksBuildPhase;
+buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;
+};
+78B92259AD265504DAAC16DD = {
+isa = PBXResourcesBuildPhase;
+buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;
+};
+32021006D2A091DF6B0B64BF = {
+isa = PBXContainerItemProxy;
+containerPortal = 98F54143AB4E86B28C3AFEE0; proxyType = 1; remoteGlobalIDString = B902F7C2327297FC583709E1; remoteInfo = Shiqi;
+};
+B9DF8361495AB19959E60367 = {
+isa = PBXTargetDependency;
+target = B902F7C2327297FC583709E1; targetProxy = 32021006D2A091DF6B0B64BF;
+};
+EC5331A3FB474274F1F3EA71 = {
+isa = PBXNativeTarget;
+buildConfigurationList = E95DDFBC877FFAC50ACDEACB; buildPhases = (A98273D5EDAC841B04670F94,D906D075C076C9BD34008345,78B92259AD265504DAAC16DD,); buildRules = (); dependencies = (B9DF8361495AB19959E60367,); name = ShiqiUITests; packageProductDependencies = (); productName = ShiqiUITests; productReference = EB514C99415FB0A070746FE6; productType = "com.apple.product-type.bundle.ui-testing";
+};
+347CA690FC0D118686E1F7A4 = {
+isa = XCBuildConfiguration;
+buildSettings = {
+SWIFT_VERSION = 5.0;
+IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+SDKROOT = iphoneos;
+TARGETED_DEVICE_FAMILY = "1,2";
+CLANG_ENABLE_MODULES = YES;
+CLANG_ENABLE_OBJC_ARC = YES;
+SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+ONLY_ACTIVE_ARCH = YES;
+DEBUG_INFORMATION_FORMAT = "dwarf";
+ENABLE_TESTABILITY = YES;
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+}; name = Debug;
+};
+ECED697AA80D2C285DA887B3 = {
+isa = XCBuildConfiguration;
+buildSettings = {
+SWIFT_VERSION = 5.0;
+IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+SDKROOT = iphoneos;
+TARGETED_DEVICE_FAMILY = "1,2";
+CLANG_ENABLE_MODULES = YES;
+CLANG_ENABLE_OBJC_ARC = YES;
+SWIFT_OPTIMIZATION_LEVEL = "-O";
+DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+ENABLE_TESTABILITY = NO;
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
+}; name = Release;
+};
+51C0E81AE2566243C2D71444 = {
+isa = XCConfigurationList;
+buildConfigurations = (347CA690FC0D118686E1F7A4,ECED697AA80D2C285DA887B3,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;
+};
+A216C478D5BD853DF03BC3FC = {
+isa = XCBuildConfiguration;
+buildSettings = {
+SWIFT_VERSION = 5.0;
+IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+SDKROOT = iphoneos;
+TARGETED_DEVICE_FAMILY = "1,2";
+CLANG_ENABLE_MODULES = YES;
+CLANG_ENABLE_OBJC_ARC = YES;
+PRODUCT_NAME = "$(TARGET_NAME)";
+CODE_SIGN_STYLE = Automatic;
+SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+SUPPORTS_MACCATALYST = NO;
+SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+PRODUCT_BUNDLE_IDENTIFIER = "cn.shuning.ddlreminder.ios";
+LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+INFOPLIST_FILE = "Resources/Info.plist";
+GENERATE_INFOPLIST_FILE = NO;
+ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+MARKETING_VERSION = 1.0.0;
+CURRENT_PROJECT_VERSION = 1;
+}; name = Debug;
+};
+1FC976EB1BC372CF279B05F9 = {
+isa = XCBuildConfiguration;
+buildSettings = {
+SWIFT_VERSION = 5.0;
+IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+SDKROOT = iphoneos;
+TARGETED_DEVICE_FAMILY = "1,2";
+CLANG_ENABLE_MODULES = YES;
+CLANG_ENABLE_OBJC_ARC = YES;
+PRODUCT_NAME = "$(TARGET_NAME)";
+CODE_SIGN_STYLE = Automatic;
+SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+SUPPORTS_MACCATALYST = NO;
+SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+PRODUCT_BUNDLE_IDENTIFIER = "cn.shuning.ddlreminder.ios";
+LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+INFOPLIST_FILE = "Resources/Info.plist";
+GENERATE_INFOPLIST_FILE = NO;
+ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+MARKETING_VERSION = 1.0.0;
+CURRENT_PROJECT_VERSION = 1;
+}; name = Release;
+};
+70336279113C6D09893D9716 = {
+isa = XCConfigurationList;
+buildConfigurations = (A216C478D5BD853DF03BC3FC,1FC976EB1BC372CF279B05F9,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;
+};
+A3B89B9F521DBFFE13D77D8D = {
+isa = XCBuildConfiguration;
+buildSettings = {
+SWIFT_VERSION = 5.0;
+IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+SDKROOT = iphoneos;
+TARGETED_DEVICE_FAMILY = "1,2";
+CLANG_ENABLE_MODULES = YES;
+CLANG_ENABLE_OBJC_ARC = YES;
+PRODUCT_NAME = "$(TARGET_NAME)";
+CODE_SIGN_STYLE = Automatic;
+SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+SUPPORTS_MACCATALYST = NO;
+SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+PRODUCT_BUNDLE_IDENTIFIER = "cn.shuning.ddlreminder.ios.coretests";
+LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+GENERATE_INFOPLIST_FILE = YES;
+TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Shiqi.app/Shiqi";
+BUNDLE_LOADER = "$(TEST_HOST)";
+}; name = Debug;
+};
+0B8192F96C5A1704AFDE8899 = {
+isa = XCBuildConfiguration;
+buildSettings = {
+SWIFT_VERSION = 5.0;
+IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+SDKROOT = iphoneos;
+TARGETED_DEVICE_FAMILY = "1,2";
+CLANG_ENABLE_MODULES = YES;
+CLANG_ENABLE_OBJC_ARC = YES;
+PRODUCT_NAME = "$(TARGET_NAME)";
+CODE_SIGN_STYLE = Automatic;
+SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+SUPPORTS_MACCATALYST = NO;
+SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+PRODUCT_BUNDLE_IDENTIFIER = "cn.shuning.ddlreminder.ios.coretests";
+LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+GENERATE_INFOPLIST_FILE = YES;
+TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Shiqi.app/Shiqi";
+BUNDLE_LOADER = "$(TEST_HOST)";
+}; name = Release;
+};
+930019487CF97BC670DD7556 = {
+isa = XCConfigurationList;
+buildConfigurations = (A3B89B9F521DBFFE13D77D8D,0B8192F96C5A1704AFDE8899,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;
+};
+A0DC28EADC3400F05CE9AAFB = {
+isa = XCBuildConfiguration;
+buildSettings = {
+SWIFT_VERSION = 5.0;
+IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+SDKROOT = iphoneos;
+TARGETED_DEVICE_FAMILY = "1,2";
+CLANG_ENABLE_MODULES = YES;
+CLANG_ENABLE_OBJC_ARC = YES;
+PRODUCT_NAME = "$(TARGET_NAME)";
+CODE_SIGN_STYLE = Automatic;
+SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+SUPPORTS_MACCATALYST = NO;
+SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+PRODUCT_BUNDLE_IDENTIFIER = "cn.shuning.ddlreminder.ios.uitests";
+LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+GENERATE_INFOPLIST_FILE = YES;
+TEST_TARGET_NAME = Shiqi;
+}; name = Debug;
+};
+01B34918E253259CFD7EDB0A = {
+isa = XCBuildConfiguration;
+buildSettings = {
+SWIFT_VERSION = 5.0;
+IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+SDKROOT = iphoneos;
+TARGETED_DEVICE_FAMILY = "1,2";
+CLANG_ENABLE_MODULES = YES;
+CLANG_ENABLE_OBJC_ARC = YES;
+PRODUCT_NAME = "$(TARGET_NAME)";
+CODE_SIGN_STYLE = Automatic;
+SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+SUPPORTS_MACCATALYST = NO;
+SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+PRODUCT_BUNDLE_IDENTIFIER = "cn.shuning.ddlreminder.ios.uitests";
+LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+GENERATE_INFOPLIST_FILE = YES;
+TEST_TARGET_NAME = Shiqi;
+}; name = Release;
+};
+E95DDFBC877FFAC50ACDEACB = {
+isa = XCConfigurationList;
+buildConfigurations = (A0DC28EADC3400F05CE9AAFB,01B34918E253259CFD7EDB0A,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;
+};
+98F54143AB4E86B28C3AFEE0 = {
+isa = PBXProject;
+attributes = { BuildIndependentTargetsInParallel = YES; LastUpgradeCheck = 1600; TargetAttributes = { B902F7C2327297FC583709E1 = {CreatedOnToolsVersion = 16.0;}; 03551B71F4545C12E375EFED = {CreatedOnToolsVersion = 16.0; TestTargetID = B902F7C2327297FC583709E1;}; EC5331A3FB474274F1F3EA71 = {CreatedOnToolsVersion = 16.0; TestTargetID = B902F7C2327297FC583709E1;}; }; }; buildConfigurationList = 51C0E81AE2566243C2D71444; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en,Base,"zh-Hans",); mainGroup = CAEE220ED3D0CE5D599C3E39; packageReferences = (582681C2EAE02B3F3D399C0C,); productRefGroup = 692092DE1C1C8624E142B71D; projectDirPath = ""; projectRoot = ""; targets = (B902F7C2327297FC583709E1,03551B71F4545C12E375EFED,EC5331A3FB474274F1F3EA71,);
+};
+};
+rootObject = 98F54143AB4E86B28C3AFEE0;
+}

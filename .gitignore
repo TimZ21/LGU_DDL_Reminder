@@ -3,6 +3,7 @@
 dist/
 .DS_Store
 *.xcuserstate
+xcuserdata/
 
 # Local configuration, diagnostics, and private calendar data
 .env
@@ -20,3 +21,7 @@ private/
 *.pfx
 *.key
 *.mobileprovision
+*.p8
+*.certSigningRequest
+*.cer
+*.keychain-db

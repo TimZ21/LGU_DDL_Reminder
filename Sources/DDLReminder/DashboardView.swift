@@ -129,7 +129,7 @@ struct DashboardView: View {
                             HStack(spacing: 12) {
                                 Image(systemName: "bell.badge").foregroundStyle(Palette.accent)
                                 VStack(alignment: .leading, spacing: 3) {
-                                    Text(store.t("打开通知，让截止日期主动找你", "Get a heads-up before each deadline")).font(.callout.weight(.medium))
+                                    Text(store.t("开启截止日期通知", "Enable deadline notifications")).font(.callout.weight(.medium))
                                     Text(store.t("默认提前 24 小时、3 小时、30 分钟，以及到期时提醒", "Reminders: 24 hours, 3 hours, 30 minutes before, and at the deadline")).font(.caption).foregroundStyle(.secondary)
                                 }
                                 Spacer()
@@ -248,7 +248,7 @@ struct DashboardView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 5) {
-                Text(store.t("每一步，都从容一点。", "A little more time to breathe.")).font(.system(size: 25, weight: .semibold))
+                Text(store.t("课程 DDL 与提醒", "Course deadlines and reminders")).font(.system(size: 25, weight: .semibold)).fixedSize(horizontal: false, vertical: true)
                 Text(store.format(store.now, pattern: "yyyy年M月d日 EEEE") + "  ·  " + store.preferences.timeZoneLabel)
                     .font(.system(size: 12)).foregroundStyle(.secondary)
                 Text(store.t("给龙大学子的免费开源软件", "Free, open-source software for LGU students"))
@@ -267,7 +267,7 @@ struct DashboardView: View {
     private var statCards: some View {
         HStack(spacing: 12) {
             stat(store.t("未来 7 天", "Next 7 days"), value: store.nextSevenDays.count, hint: store.t("按截止时间排序", "Ordered by due date"), symbol: "calendar", color: Palette.accent)
-            stat(store.t("24 小时内", "Within 24 hours"), value: store.nextDay.count, hint: store.t("留一点时间给检查", "Make time for a final check"), symbol: "clock", color: Palette.goldInk)
+            stat(store.t("24 小时内", "Within 24 hours"), value: store.nextDay.count, hint: store.t("即将到期的任务", "Tasks due within 24 hours"), symbol: "clock", color: Palette.goldInk)
             stat(store.t("时间待确认", "Time to confirm"), value: store.uncertain.count, hint: store.t("仅日期，具体几点未知", "Date given, exact time missing"), symbol: "questionmark.circle", color: .secondary)
         }
     }
@@ -283,7 +283,7 @@ struct DashboardView: View {
             Image(systemName: "link.circle.fill").font(.system(size: 39)).foregroundStyle(Palette.accent)
             VStack(alignment: .leading, spacing: 6) {
                 Text(store.t("把 Blackboard 的截止日期带到桌面", "Bring your Blackboard deadlines to your desktop")).font(.system(size: 17, weight: .semibold))
-                Text(store.t("连接一次日历订阅，自动更新。关闭窗口后，拾期仍在菜单栏陪你。", "Connect once for automatic updates. Shiqi stays in the menu bar when you close this window."))
+                Text(store.t("连接日历订阅后自动更新。关闭窗口后，拾期继续在菜单栏运行。", "Connect a calendar subscription for automatic updates. Shiqi runs in the menu bar after the window closes."))
                     .font(.system(size: 12)).foregroundStyle(.secondary)
             }
             Spacer()
