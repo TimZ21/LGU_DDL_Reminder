@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import EventKit
 import DeadlineCore
 
@@ -10,23 +14,36 @@ struct AppleRemindersResult {
 
 @MainActor
 final class AppleRemindersService {
+    #if os(macOS)
     static let listTitle = "拾期 · DDL"
+    #else
+    // The phone's independently-imported calendar must not overwrite Mac exports.
+    static let listTitle = "拾期 · iOS DDL"
+    #endif
     private let store = EKEventStore()
 
     var authorized: Bool {
         let status = EKEventStore.authorizationStatus(for: .reminder)
+        #if os(macOS)
         if #available(macOS 14.0, *) { return status == .fullAccess }
         return status == .authorized
+        #else
+        return status == .fullAccess
+        #endif
     }
 
     func requestPermission() async throws -> Bool {
         if authorized { return true }
         let granted: Bool
+        #if os(macOS)
         if #available(macOS 14.0, *) {
             granted = try await store.requestFullAccessToReminders()
         } else {
             granted = try await store.requestAccess(to: .reminder)
         }
+        #else
+        granted = try await store.requestFullAccessToReminders()
+        #endif
         // Discard objects fetched before permission was granted.
         store.reset()
         return granted && authorized
@@ -35,7 +52,11 @@ final class AppleRemindersService {
     func reconcile(_ deadlines: [Deadline], state: AppleRemindersState,
                    timeZone: TimeZone, language: AppLanguage) async throws -> AppleRemindersResult {
         guard authorized else {
+            #if os(iOS)
+            throw CalendarError.message(language.text("请在 iPhone 设置 → 隐私与安全性 → 提醒事项中允许拾期访问。", "Allow Shiqi in Settings → Privacy & Security → Reminders."))
+            #else
             throw CalendarError.message(language.text("请在系统设置 → 隐私与安全性 → 提醒事项中允许拾期访问。", "Allow Shiqi in System Settings → Privacy & Security → Reminders."))
+            #endif
         }
         try Task.checkCancellation()
         let calendar = try destination(state: state, language: language)
@@ -81,9 +102,13 @@ final class AppleRemindersService {
                 } ?? alarms.isEmpty
                 if matches.isEmpty || reminder.title != item.title || (reminder.notes ?? "") != notes ||
                     reminder.dueDateComponents != due || reminder.isCompleted != completed ||
-                    reminder.url != url || !alarmsMatch {
+                    reminder.url != url || !alarmsMatch || needsStartDate(reminder, due: due) {
                     reminder.calendar = calendar; reminder.title = item.title; reminder.notes = notes
                     reminder.dueDateComponents = due; reminder.url = url
+                    #if os(iOS)
+                    // EventKit requires a start date for reminders with an iOS due date.
+                    reminder.startDateComponents = due
+                    #endif
                     reminder.isCompleted = completed
                     reminder.alarms = alarmDate.map { [EKAlarm(absoluteDate: $0)] } ?? []
                     try store.save(reminder, commit: false)
@@ -108,6 +133,14 @@ final class AppleRemindersService {
         return AppleRemindersResult(state: nextState, completions: completions, count: deadlines.count)
     }
 
+    private func needsStartDate(_ reminder: EKReminder, due: DateComponents) -> Bool {
+        #if os(iOS)
+        return reminder.startDateComponents != due
+        #else
+        return false
+        #endif
+    }
+
     private func destination(state: AppleRemindersState, language: AppLanguage) throws -> EKCalendar {
         let calendars = store.calendars(for: .reminder)
         if let id = state.calendarID, let existing = calendars.first(where: { $0.calendarIdentifier == id }) {
@@ -124,11 +157,19 @@ final class AppleRemindersService {
         guard let source = store.defaultCalendarForNewReminders()?.source
                 ?? calendars.first(where: \.allowsContentModifications)?.source
                 ?? store.sources.first(where: { $0.sourceType == .local }) else {
+            #if os(iOS)
+            throw CalendarError.message(language.text("没有可用的提醒事项账户。请先打开 iPhone 提醒事项并设置本机或 iCloud 列表。", "No Reminders account is available. Open iPhone Reminders and set up a local or iCloud list first."))
+            #else
             throw CalendarError.message(language.text("没有可用的提醒事项账户。请先打开 macOS 提醒事项并设置本机或 iCloud 列表。", "No Reminders account is available. Open macOS Reminders and set up a local or iCloud list first."))
+            #endif
         }
         let calendar = EKCalendar(for: .reminder, eventStore: store)
         calendar.title = Self.listTitle; calendar.source = source
+        #if os(macOS)
         calendar.cgColor = NSColor(srgbRed: 0.40, green: 0.24, blue: 0.63, alpha: 1).cgColor
+        #else
+        calendar.cgColor = UIColor(red: 0.40, green: 0.24, blue: 0.63, alpha: 1).cgColor
+        #endif
         do { try store.saveCalendar(calendar, commit: true) }
         catch {
             store.reset()
