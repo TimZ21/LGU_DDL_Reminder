@@ -213,6 +213,7 @@ enum CourseScheduleStorage {
     }
 }
 
+#if os(macOS)
 enum CourseArchiveReader {
     static func calendarTexts(from url: URL) throws -> [String] {
         let namesData = try runUnzip(["-Z1", url.path], maximumBytes: 64 * 1024)
@@ -258,3 +259,4 @@ enum CourseArchiveReader {
         return data
     }
 }
+#endif

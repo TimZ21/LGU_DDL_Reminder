@@ -149,6 +149,6 @@ struct MobileDetailView: View {
         }
     }
     private func sourceName(_ source: DeadlineSource) -> String {
-        switch source { case .blackboard: return "Blackboard"; case .file: return store.text("日历文件", "Calendar file"); case .manual: return store.text("手动添加", "Manual") }
+        switch source { case .blackboard: return "Blackboard"; case .file: return store.text("日历文件", "Calendar file"); case .manual: return store.text("手动添加", "Manual"); case .outlook: return store.text("Outlook 邮件", "Outlook mail") }
     }
 }

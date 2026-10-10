@@ -272,13 +272,17 @@ final class MobileStore: ObservableObject {
     private static func demoSnapshot() -> Snapshot {
         var result = Snapshot()
         let day = Calendar.current.startOfDay(for: Date())
-        result.deadlines = [
-            Deadline(title: "概率论 · 第三次作业", course: "MAT2040", notes: "提交 PDF 到 Blackboard。", dueDate: day.addingTimeInterval(2 * 86400 + 23 * 3600 + 59 * 60), source: .blackboard),
-            Deadline(title: "Research proposal", course: "ENG2001", dueDate: day.addingTimeInterval(4 * 86400 + 18 * 3600), source: .file),
-            Deadline(title: "小组展示", course: "CSC1001", dueDate: day.addingTimeInterval(6 * 86400), hasTime: false),
-            Deadline(title: "Linear algebra worksheet", course: "MAT1001", dueDate: day.addingTimeInterval(-86400 + 18 * 3600), source: .blackboard),
-            Deadline(title: "实验报告", course: "PHY1001", dueDate: day.addingTimeInterval(86400 + 12 * 3600), completed: true)
-        ]
+        let probability = Deadline(title: "概率论 · 第三次作业", course: "MAT2040", notes: "提交 PDF 到 Blackboard。",
+                                   dueDate: day.addingTimeInterval(2 * 86400 + 23 * 3600 + 59 * 60), source: .blackboard)
+        let proposal = Deadline(title: "Research proposal", course: "ENG2001",
+                                dueDate: day.addingTimeInterval(4 * 86400 + 18 * 3600), source: .file)
+        let presentation = Deadline(title: "小组展示", course: "CSC1001",
+                                    dueDate: day.addingTimeInterval(6 * 86400), hasTime: false)
+        let worksheet = Deadline(title: "Linear algebra worksheet", course: "MAT1001",
+                                 dueDate: day.addingTimeInterval(-86400 + 18 * 3600), source: .blackboard)
+        let labReport = Deadline(title: "实验报告", course: "PHY1001",
+                                 dueDate: day.addingTimeInterval(86400 + 12 * 3600), completed: true)
+        result.deadlines = [probability, proposal, presentation, worksheet, labReport]
         return result
     }
     #if DEBUG
