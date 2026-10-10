@@ -15,7 +15,7 @@ struct ConnectionView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(store.t("连接 Blackboard", "Connect Blackboard")).font(.system(size: 23, weight: .semibold))
-                    Text(store.t("bb.cuhk.edu.cn · 龙大校园日历", "bb.cuhk.edu.cn · Longda campus calendar")).font(.callout).foregroundStyle(.secondary)
+                    Text(store.t("bb.cuhk.edu.cn · 龙大校园日历", "bb.cuhk.edu.cn · LGU campus calendar")).font(.callout).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Button(store.t("完成", "Done")) { dismiss() }.keyboardShortcut(.cancelAction)

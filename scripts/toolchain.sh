@@ -32,5 +32,5 @@ if [ -f "$TASK_SWIFT_INCLUDE/module.modulemap" ] && [ -f "$TASK_SWIFT_INCLUDE/br
   ]
 }
 EOF
-  TASK_SWIFT_CC_FLAGS=(-Xcc -ivfsoverlay -Xcc "$TASK_BUILD_ROOT/sdk-overlay/overlay.yaml")
+  TASK_SWIFT_CC_FLAGS=(-vfsoverlay "$TASK_BUILD_ROOT/sdk-overlay/overlay.yaml")
 fi

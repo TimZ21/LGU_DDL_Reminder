@@ -478,6 +478,105 @@ final class DeadlineCoreTests: XCTestCase {
         XCTAssertEqual(result.protectedPrefixes, ["blackboard:bad"])
     }
 
+    func testLegacyRemindersMigrationPreservesTasksAndDefaultsToOff() throws {
+        var snapshot = Snapshot()
+        snapshot.deadlines = [Deadline(id: "blackboard:legacy", title: "旧作业", course: "CSC", notes: "备注",
+                                      dueDate: date("2026-10-12T15:59:00Z"), source: .blackboard, completed: true)]
+        var json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(snapshot)) as! [String: Any]
+        json.removeValue(forKey: "appleReminders")
+        var items = json["deadlines"] as! [[String: Any]]
+        items[0].removeValue(forKey: "reminderID"); json["deadlines"] = items
+        var prefs = json["preferences"] as! [String: Any]
+        prefs.removeValue(forKey: "appleRemindersEnabled"); json["preferences"] = prefs
+        let migrated = try JSONDecoder().decode(Snapshot.self, from: JSONSerialization.data(withJSONObject: json))
+        XCTAssertFalse(migrated.preferences.appleRemindersEnabled)
+        XCTAssertEqual(migrated.appleReminders, AppleRemindersState())
+        XCTAssertTrue(migrated.deadlines[0].completed)
+        XCTAssertEqual(migrated.deadlines[0].dueDate, snapshot.deadlines[0].dueDate)
+        XCTAssertEqual(migrated.deadlines[0].notes, "备注")
+        XCTAssertTrue(UUID(uuidString: migrated.deadlines[0].reminderID) != nil)
+        let restarted = try JSONDecoder().decode(Snapshot.self, from: JSONEncoder().encode(migrated))
+        XCTAssertEqual(restarted.deadlines, migrated.deadlines)
+    }
+
+    func testRemindersIdentitySurvivesUIDChangesReschedulesAndFileImport() throws {
+        let parser = ICalendarParser()
+        let now = date("2026-10-09T00:00:00Z")
+        let initial = try parser.parse(feed(event("UID:old\r\nSUMMARY:Homework\r\nCATEGORIES:CSC\r\nDTSTART:20261012T155900Z")), now: now).deadlines
+        let changed = try parser.parse(feed(event("UID:new\r\nSUMMARY:Homework\r\nCATEGORIES:CSC\r\nDTSTART:20261012T155900Z")), now: now)
+        let merged = DeadlineMerger.merge(previous: initial, parsed: changed, source: .blackboard)
+        XCTAssertEqual(merged[0].reminderID, initial[0].reminderID)
+        XCTAssertFalse(merged[0].id == initial[0].id)
+        let moved = try parser.parse(feed(event("UID:new\r\nSUMMARY:Updated homework\r\nCATEGORIES:CSC\r\nDTSTART:20261013T155900Z")), now: now)
+        let rescheduled = DeadlineMerger.merge(previous: merged, parsed: moved, source: .blackboard)
+        XCTAssertEqual(rescheduled[0].reminderID, initial[0].reminderID)
+        let file = try parser.parse(feed(event("UID:new\r\nSUMMARY:Updated homework\r\nCATEGORIES:CSC\r\nDTSTART:20261013T155900Z")), source: .file, now: now)
+        let imported = DeadlineMerger.merge(previous: rescheduled, parsed: file, source: .file, removeMissing: false)
+        XCTAssertEqual(imported.count, 1)
+        XCTAssertEqual(imported[0].reminderID, initial[0].reminderID)
+        XCTAssertEqual(imported[0].source, .blackboard)
+    }
+
+    func testRemindersRecurrenceAndAmbiguousTasksHaveSeparateIdentities() throws {
+        let recurrence = try ICalendarParser().parse(feed(event("UID:repeat\r\nSUMMARY:Weekly\r\nDTSTART:20261012T120000Z\r\nRRULE:FREQ=DAILY;COUNT=3")), now: date("2026-10-09T00:00:00Z"))
+        XCTAssertEqual(Set(recurrence.deadlines.map(\.reminderID)).count, 3)
+        let a = Deadline(id: "blackboard:a", title: "Same", dueDate: date("2026-10-12T12:00:00Z"), source: .blackboard)
+        let b = Deadline(id: "blackboard:b", title: "Same", dueDate: a.dueDate, source: .blackboard)
+        let replacement = Deadline(id: "blackboard:c", title: "Same", dueDate: a.dueDate, source: .blackboard)
+        let result = DeadlineMerger.merge(previous: [a, b], parsed: ParsedCalendar(deadlines: [replacement], warnings: [], protectedPrefixes: []), source: .blackboard)
+        XCTAssertFalse([a.reminderID, b.reminderID].contains(result[0].reminderID))
+    }
+
+    func testRemindersCompletionImportsChangesAndPreservesLocalIntent() {
+        XCTAssertTrue(AppleRemindersPlanner.completion(local: false, remote: true, lastSynced: false))
+        XCTAssertFalse(AppleRemindersPlanner.completion(local: true, remote: false, lastSynced: true))
+        XCTAssertTrue(AppleRemindersPlanner.completion(local: true, remote: false, lastSynced: false))
+        XCTAssertFalse(AppleRemindersPlanner.completion(local: false, remote: true, lastSynced: true))
+        XCTAssertTrue(AppleRemindersPlanner.completion(local: true, remote: false, lastSynced: nil))
+        XCTAssertFalse(AppleRemindersPlanner.completion(local: false, remote: true, lastSynced: nil))
+        XCTAssertTrue(AppleRemindersPlanner.completion(local: true, remote: nil, lastSynced: false))
+    }
+
+    func testRemindersDueComponentsPreserveExactInstantAndDateOnly() {
+        var item = Deadline(title: "Homework", dueDate: date("2026-10-12T15:59:45Z"))
+        let timed = AppleRemindersPlanner.dueComponents(for: item, timeZone: zone)
+        XCTAssertEqual(timed.hour, 23); XCTAssertEqual(timed.minute, 59); XCTAssertEqual(timed.second, 45)
+        XCTAssertEqual(timed.timeZone, zone); XCTAssertEqual(timed.date, item.dueDate)
+        let differentZone = AppleRemindersPlanner.dueComponents(for: item, timeZone: TimeZone(identifier: "America/New_York")!)
+        XCTAssertEqual(differentZone.date, item.dueDate)
+        item.hasTime = false
+        let day = AppleRemindersPlanner.dueComponents(for: item, timeZone: zone)
+        XCTAssertEqual(day.year, 2026); XCTAssertEqual(day.month, 10); XCTAssertEqual(day.day, 12)
+        XCTAssertTrue(day.hour == nil && day.minute == nil && day.second == nil && day.timeZone == nil)
+        XCTAssertEqual(day.calendar?.identifier, .gregorian)
+    }
+
+    func testRemindersLinksIdentifyOnlyOwnedTasks() {
+        let id = UUID().uuidString
+        XCTAssertEqual(AppleRemindersPlanner.identity(from: AppleRemindersPlanner.link(for: id)), id)
+        for value in ["https://bb.cuhk.edu.cn/calendar/feed", "shiqi://deadline/not-a-uuid", "shiqi://other/\(id)",
+                      "shiqi://deadline/\(id)/extra", "shiqi://deadline/\(id)?token=private"] {
+            XCTAssertTrue(AppleRemindersPlanner.identity(from: URL(string: value)) == nil)
+        }
+        XCTAssertTrue(AppleRemindersPlanner.link(for: "blackboard:private-feed-uid") == nil)
+    }
+
+    func testRemindersStatePersistsBaselineAndDoesNotDisableOriginalNotifications() throws {
+        var snapshot = Snapshot()
+        snapshot.preferences.appleRemindersEnabled = true
+        let now = date("2026-10-09T00:00:00Z")
+        snapshot.deadlines = [Deadline(title: "Upcoming", dueDate: now.addingTimeInterval(7200))]
+        snapshot.appleReminders.calendarID = "dedicated-list"
+        snapshot.appleReminders.completions[snapshot.deadlines[0].reminderID] = false
+        let restored = try JSONDecoder().decode(Snapshot.self, from: JSONEncoder().encode(snapshot))
+        XCTAssertTrue(restored.preferences.appleRemindersEnabled)
+        XCTAssertEqual(restored.appleReminders, snapshot.appleReminders)
+        XCTAssertEqual(ReminderPlanner.plans(for: restored.deadlines, preferences: restored.preferences, now: now).count, 2)
+        var completed = restored.deadlines
+        completed[0].completed = AppleRemindersPlanner.completion(local: false, remote: true, lastSynced: false)
+        XCTAssertTrue(ReminderPlanner.plans(for: completed, preferences: restored.preferences, now: now).isEmpty)
+    }
+
     static var allTests = [
         ("课程日历每周课程和停课日期", testCourseCalendarImportsWeeklyMeetingsAndExceptions),
         ("课程日历保留独立事件", testCourseCalendarKeepsSeparateSessionsWithoutTaskMatching),
@@ -488,6 +587,13 @@ final class DeadlineCoreTests: XCTestCase {
         ("Outlook EML 文件导入", testOutlookEMLImportReadsMultipartTextAndStableIdentity),
         ("Outlook 邮件日期和具体时间", testOutlookMailExtractsDateOnlyAndPreciseTimeWithoutGuessing),
         ("Outlook 候选不被日历同步合并", testOutlookCandidateDoesNotGetConsumedByCalendarSync),
+        ("提醒事项旧数据迁移默认关闭", testLegacyRemindersMigrationPreservesTasksAndDefaultsToOff),
+        ("提醒事项标识跨 UID 改期与文件导入", testRemindersIdentitySurvivesUIDChangesReschedulesAndFileImport),
+        ("提醒事项重复日历与歧义隔离", testRemindersRecurrenceAndAmbiguousTasksHaveSeparateIdentities),
+        ("提醒事项完成与恢复待办双向同步", testRemindersCompletionImportsChangesAndPreservesLocalIntent),
+        ("提醒事项具体时间与仅日期", testRemindersDueComponentsPreserveExactInstantAndDateOnly),
+        ("提醒事项链接与非托管事项隔离", testRemindersLinksIdentifyOnlyOwnedTasks),
+        ("提醒事项状态持久化与原通知兼容", testRemindersStatePersistsBaselineAndDoesNotDisableOriginalNotifications),
         ("UTC → 北京时间", testUTCConvertsToBeijingWithoutShiftingInstant),
         ("TZID / 无时区日期", testTZIDAndFloatingDate),
         ("仅日期事项与提醒", testAllDayNeverInventsMidnightDeadline),

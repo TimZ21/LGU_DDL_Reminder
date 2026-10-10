@@ -14,13 +14,34 @@ public struct Deadline: Identifiable, Codable, Equatable {
     public var source: DeadlineSource
     public var link: URL?
     public var completed: Bool
+    // Local identity survives a Blackboard UID change and is never a feed token.
+    public var reminderID: String
 
     public init(id: String = UUID().uuidString, title: String, course: String = "", notes: String = "",
                 dueDate: Date, hasTime: Bool = true, source: DeadlineSource = .manual,
-                link: URL? = nil, completed: Bool = false) {
+                link: URL? = nil, completed: Bool = false, reminderID: String = UUID().uuidString) {
         self.id = id; self.title = title; self.course = course; self.sourceCourse = nil; self.notes = notes
         self.dueDate = dueDate; self.hasTime = hasTime; self.source = source
         self.link = link; self.completed = completed
+        self.reminderID = reminderID
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, title, course, sourceCourse, notes, dueDate, hasTime, source, link, completed, reminderID
+    }
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decode(String.self, forKey: .id)
+        title = try values.decode(String.self, forKey: .title)
+        course = try values.decode(String.self, forKey: .course)
+        sourceCourse = try values.decodeIfPresent(String.self, forKey: .sourceCourse)
+        notes = try values.decode(String.self, forKey: .notes)
+        dueDate = try values.decode(Date.self, forKey: .dueDate)
+        hasTime = try values.decode(Bool.self, forKey: .hasTime)
+        source = try values.decode(DeadlineSource.self, forKey: .source)
+        link = try values.decodeIfPresent(URL.self, forKey: .link)
+        completed = try values.decode(Bool.self, forKey: .completed)
+        reminderID = try values.decodeIfPresent(String.self, forKey: .reminderID) ?? UUID().uuidString
     }
 
     public func isOverdue(at now: Date, timeZone: TimeZone) -> Bool {
@@ -37,12 +58,13 @@ public struct Preferences: Codable, Equatable {
     public var reminderMinutes = [1440, 180, 30, 0]
     public var notificationsEnabled = true
     public var language: AppLanguage = .chinese
+    public var appleRemindersEnabled = false
     public init() {}
     public var timeZone: TimeZone { TimeZone(identifier: timeZoneID) ?? TimeZone(secondsFromGMT: 28800)! }
     public var timeZoneLabel: String { language.timeZoneName(timeZoneID) }
 
     private enum CodingKeys: String, CodingKey {
-        case siteURL, timeZoneID, syncMinutes, reminderMinutes, notificationsEnabled, language
+        case siteURL, timeZoneID, syncMinutes, reminderMinutes, notificationsEnabled, language, appleRemindersEnabled
     }
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
@@ -52,6 +74,7 @@ public struct Preferences: Codable, Equatable {
         reminderMinutes = try values.decodeIfPresent([Int].self, forKey: .reminderMinutes) ?? reminderMinutes
         notificationsEnabled = try values.decodeIfPresent(Bool.self, forKey: .notificationsEnabled) ?? notificationsEnabled
         language = try values.decodeIfPresent(AppLanguage.self, forKey: .language) ?? .chinese
+        appleRemindersEnabled = try values.decodeIfPresent(Bool.self, forKey: .appleRemindersEnabled) ?? false
     }
 }
 
@@ -60,7 +83,17 @@ public struct Snapshot: Codable {
     public var preferences = Preferences()
     public var lastSync: Date?
     public var warnings: [String] = []
+    public var appleReminders = AppleRemindersState()
     public init() {}
+    private enum CodingKeys: String, CodingKey { case deadlines, preferences, lastSync, warnings, appleReminders }
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        deadlines = try values.decode([Deadline].self, forKey: .deadlines)
+        preferences = try values.decode(Preferences.self, forKey: .preferences)
+        lastSync = try values.decodeIfPresent(Date.self, forKey: .lastSync)
+        warnings = try values.decode([String].self, forKey: .warnings)
+        appleReminders = try values.decodeIfPresent(AppleRemindersState.self, forKey: .appleReminders) ?? AppleRemindersState()
+    }
 }
 
 public enum FeedAddress {

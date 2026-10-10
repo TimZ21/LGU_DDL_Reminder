@@ -73,7 +73,7 @@ struct DeadlineDetailView: View {
                 if !item.notes.isEmpty {
                     ScrollView { Text(item.notes).font(.callout).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }.frame(maxHeight: 160)
                 }
-                Text(store.t("「已完成」是本机记录，不代表 Blackboard 已提交或已评分。", "Completion is recorded locally; it does not mean submitted or graded in Blackboard."))
+                Text(store.t("「已完成」不代表 Blackboard 已提交或已评分；开启提醒事项同步后，完成状态会在两边同步。", "Completion does not mean submitted or graded in Blackboard. With Reminders sync enabled, completion syncs in both directions."))
                     .font(.caption).foregroundStyle(.secondary)
                 HStack {
                     Button(item.completed ? store.t("设为待办", "Mark incomplete") : store.t("标记已完成", "Mark complete")) { store.toggle(item) }.buttonStyle(PrimaryButtonStyle())

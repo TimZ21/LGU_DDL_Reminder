@@ -185,6 +185,13 @@ struct DashboardView: View {
             openWindow(id: "main"); NSApp.activate(ignoringOtherApps: true)
         }
         .onChange(of: scenePhase) { phase in if phase == .active { store.reloadCodexDisplay(); Task { await store.refreshPermission() } } }
+        .onOpenURL { url in
+            guard let id = AppleRemindersPlanner.identity(from: url),
+                  let item = store.snapshot.deadlines.first(where: { $0.reminderID == id }) else { return }
+            store.showSettings = false; store.showConnection = false; store.showEditor = false
+            selectedItem = item
+            openWindow(id: "main"); NSApp.activate(ignoringOtherApps: true)
+        }
     }
 
     private var sidebar: some View {
@@ -193,7 +200,7 @@ struct DashboardView: View {
                 AppMark().frame(width: 48, height: 48)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(store.t("拾期", "Shiqi")).font(.system(size: 22, weight: .semibold)).foregroundStyle(Palette.accent)
-                    Text(store.t("龙大", "LONGDA")).font(.system(size: 10, weight: .semibold)).tracking(1.2).foregroundStyle(Palette.goldInk)
+                    Text(store.t("龙大", "LGU")).font(.system(size: 10, weight: .semibold)).tracking(1.2).foregroundStyle(Palette.goldInk)
                 }
             }.padding(.top, 38).padding(.bottom, 34)
             Text(store.t("我的任务", "MY TASKS")).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary).padding(.bottom, 12).padding(.leading, 10)
@@ -223,7 +230,7 @@ struct DashboardView: View {
                     Circle().fill(store.isConnected ? Palette.accent : Color.secondary.opacity(0.5)).frame(width: 6, height: 6)
                     Text(store.isConnected ? store.t("Blackboard 已连接", "Blackboard connected") : store.t("Blackboard 未连接", "Blackboard not connected")).font(.system(size: 11, weight: .medium))
                 }
-                Text(store.t("龙大校园日历", "Longda campus calendar")).font(.system(size: 10)).foregroundStyle(.secondary)
+                Text(store.t("龙大校园日历", "LGU campus calendar")).font(.system(size: 10)).foregroundStyle(.secondary)
                 Button(store.isConnected ? store.t("管理连接", "Manage connection") : store.t("连接 Blackboard", "Connect Blackboard")) { store.showConnection = true }
                     .font(.system(size: 12)).buttonStyle(.bordered).frame(maxWidth: .infinity, alignment: .leading)
             }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Palette.card, in: RoundedRectangle(cornerRadius: 11))
@@ -244,7 +251,7 @@ struct DashboardView: View {
                 Text(store.t("每一步，都从容一点。", "A little more time to breathe.")).font(.system(size: 25, weight: .semibold))
                 Text(store.format(store.now, pattern: "yyyy年M月d日 EEEE") + "  ·  " + store.preferences.timeZoneLabel)
                     .font(.system(size: 12)).foregroundStyle(.secondary)
-                Text(store.t("给龙大学子的免费开源软件", "Free, open-source software for Longda students"))
+                Text(store.t("给龙大学子的免费开源软件", "Free, open-source software for LGU students"))
                     .font(.system(size: 11)).foregroundStyle(Palette.accent)
             }
             Spacer()

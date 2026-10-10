@@ -61,6 +61,7 @@ public enum DeadlineMerger {
                     item.sourceCourse = item.course
                     item.course = prior.course
                 }
+                item.reminderID = prior.reminderID
                 if source == .file && prior.source == .blackboard {
                     // Importing the same event from a file must not detach it from sync.
                     item.id = prior.id
