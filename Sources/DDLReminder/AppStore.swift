@@ -19,10 +19,15 @@ final class AppStore: ObservableObject {
     @Published var showSettings = false
     @Published var showEditor = false
     @Published var showOutlook = false
+    @Published var showCourseSchedule = false
+    @Published private(set) var courseSchedule = CourseSchedule()
+    @Published var courseError: String?
+    @Published private(set) var courseFeedSummary: String?
     @Published var editingDeadline: Deadline?
     let isDemo = ProcessInfo.processInfo.arguments.contains("--demo") || Bundle.main.object(forInfoDictionaryKey: "DDLDemoMode") as? Bool == true
     private let notifications = NotificationService()
     private var feedURL: URL?
+    private var canPersistCourses = true
     private var timer: Timer?
     private var lastAttempt: Date?
     private var schedulingTask: Task<Void, Never>?
@@ -41,6 +46,11 @@ final class AppStore: ObservableObject {
             errorMessage = t("本地数据无法读取。为避免覆盖旧数据，暂时停止保存；请先备份 ~/Library/Application Support/DDLReminder。", "Local data could not be read. Saving is paused to protect existing data. Back up ~/Library/Application Support/DDLReminder first.")
         }
         reloadCodexDisplay()
+        do { courseSchedule = try CourseScheduleStorage.load() }
+        catch {
+            canPersistCourses = false
+            courseError = t("课程表数据无法读取；已停止保存，以免覆盖原文件。", "Could not read the course schedule. Saving is paused to protect it.")
+        }
         let startupLanguage = language
         Task.detached { [weak self] in
             let connection = Result { try Keychain.read(language: startupLanguage) }
@@ -112,6 +122,7 @@ final class AppStore: ObservableObject {
             try Keychain.write(url.absoluteString, language: language)
             feedURL = url; isConnected = true; lastAttempt = Date()
             merge(result, source: .blackboard); snapshot.lastSync = Date(); errorMessage = nil
+            importBlackboardCourseEvents(content)
             save(); reschedule(); notice = t("已连接 Blackboard，导入 \(result.deadlines.count) 个日历事项。", "Connected to Blackboard. Imported \(result.deadlines.count) calendar items.")
             return true
         } catch { errorMessage = error.localizedDescription; return false }
@@ -124,6 +135,7 @@ final class AppStore: ObservableObject {
             let content = try await FeedClient().fetch(url, language: language)
             let result = try ICalendarParser(language: language).parse(content, defaultTimeZone: preferences.timeZone)
             merge(result, source: .blackboard); snapshot.lastSync = Date(); now = Date()
+            importBlackboardCourseEvents(content)
             errorMessage = nil; save(); reschedule()
         } catch { errorMessage = error.localizedDescription }
     }
@@ -140,6 +152,76 @@ final class AppStore: ObservableObject {
             snapshot.warnings = result.warnings
             save(); reschedule(); notice = t("已导入 \(result.deadlines.count) 个事项。文件不会自动更新，建议连接订阅链接。", "Imported \(result.deadlines.count) items. Files do not update automatically; connect a subscription for updates.")
         } catch { errorMessage = error.localizedDescription }
+    }
+
+    func importCourseFile(_ url: URL) {
+        guard !isDemo, canPersistCourses else { return }
+        do {
+            let access = url.startAccessingSecurityScopedResource(); defer { if access { url.stopAccessingSecurityScopedResource() } }
+            let data = try Data(contentsOf: url)
+            guard data.count <= 5 * 1024 * 1024 else {
+                throw CalendarError.message(t("请选择小于 5 MB 的课表文件。", "Choose a schedule file smaller than 5 MB."))
+            }
+            let source: CourseSource = url.pathExtension.lowercased() == "zip" ? .sis : .file
+            let texts: [String]
+            if source == .sis { texts = try CourseArchiveReader.calendarTexts(from: url) }
+            else if let text = String(data: data, encoding: .utf8) { texts = [text] }
+            else { throw CalendarError.message(t("课表文件不是 UTF-8 格式。", "The schedule file is not UTF-8.")) }
+            var meetings: [CourseMeeting] = []; var warnings: [String] = []
+            for text in texts {
+                let parsed = try CourseCalendarParser().parse(text, source: source, timeZone: preferences.timeZone)
+                meetings += parsed.meetings; warnings += parsed.warnings
+            }
+            let result = ParsedCourseCalendar(meetings: meetings, warnings: warnings)
+            guard !result.meetings.isEmpty else { throw CalendarError.message(t("该文件没有可识别的课程时间，已保留原课程表。", "No class meetings were found. The existing schedule was kept.")) }
+            applyCourseImport(result, source: source)
+            notice = t("已导入 \(result.meetings.count) 个课程时段。", "Imported \(result.meetings.count) class periods.")
+        } catch { courseError = error.localizedDescription }
+    }
+
+    private func applyCourseImport(_ result: ParsedCourseCalendar, source: CourseSource) {
+        let incoming = Set(result.meetings.map(\.id))
+        // Refresh exact source identities only; never compare course titles or task content.
+        courseSchedule.meetings.removeAll { $0.source == source && incoming.contains($0.id) }
+        courseSchedule.meetings += result.meetings
+        courseSchedule.lastSync = Date()
+        courseError = result.warnings.isEmpty ? nil : result.warnings.joined(separator: "\n")
+        saveCourses()
+    }
+
+    private func importBlackboardCourseEvents(_ content: String) {
+        guard canPersistCourses else { return }
+        do {
+            let lines = content.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
+            let total = lines.filter { $0 == "BEGIN:VEVENT" }.count
+            let starts = lines.filter { $0.hasPrefix("DTSTART:") || $0.hasPrefix("DTSTART;") }.count
+            let ends = lines.filter { $0.hasPrefix("DTEND:") || $0.hasPrefix("DTEND;") }.count
+            let durations = lines.filter { $0.hasPrefix("DURATION:") }.count
+            let result = try CourseCalendarParser().parse(content, source: .blackboard, timeZone: preferences.timeZone)
+            courseFeedSummary = t("Blackboard 订阅：\(total) 个事件，\(starts) 个开始时间，\(ends) 个结束时间，\(durations) 个持续时间；识别到 \(result.meetings.count) 个课表时段。", "Blackboard feed: \(total) events, \(starts) starts, \(ends) ends, \(durations) durations; \(result.meetings.count) schedule periods found.")
+            if !result.meetings.isEmpty { applyCourseImport(result, source: .blackboard) }
+            else { courseError = nil }
+        } catch { courseError = error.localizedDescription }
+    }
+
+    func upsertCourse(_ meeting: CourseMeeting) {
+        guard canPersistCourses, !isDemo else { return }
+        if let index = courseSchedule.meetings.firstIndex(where: { $0.id == meeting.id }) {
+            if courseSchedule.meetings[index].source == .manual { courseSchedule.meetings[index] = meeting }
+            else { courseSchedule.overrides[meeting.id] = meeting }
+        } else { courseSchedule.meetings.append(meeting) }
+        saveCourses()
+    }
+    func deleteCourse(_ meeting: CourseMeeting) {
+        guard canPersistCourses, !isDemo else { return }
+        if meeting.source == .manual { courseSchedule.meetings.removeAll { $0.id == meeting.id } }
+        else { courseSchedule.hiddenIDs.insert(meeting.id) }
+        saveCourses()
+    }
+    private func saveCourses() {
+        guard !isDemo, canPersistCourses else { return }
+        do { try CourseScheduleStorage.save(courseSchedule) }
+        catch { courseError = t("课程表保存失败；请检查磁盘空间和权限。", "Could not save the schedule. Check disk space and permissions.") }
     }
 
     private func merge(_ result: ParsedCalendar, source: DeadlineSource) {

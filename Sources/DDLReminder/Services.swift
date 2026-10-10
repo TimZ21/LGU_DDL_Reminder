@@ -185,3 +185,68 @@ enum LocalStorage {
         if FileManager.default.fileExists(atPath: backup.path) { try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: backup.path) }
     }
 }
+
+enum CourseScheduleStorage {
+    private static var url: URL { LocalStorage.directory.appendingPathComponent("course-schedule.json") }
+    static func load() throws -> CourseSchedule {
+        guard FileManager.default.fileExists(atPath: url.path) else { return CourseSchedule() }
+        return try JSONDecoder().decode(CourseSchedule.self, from: Data(contentsOf: url))
+    }
+    static func save(_ schedule: CourseSchedule) throws {
+        try FileManager.default.createDirectory(at: LocalStorage.directory, withIntermediateDirectories: true)
+        let data = try JSONEncoder().encode(schedule)
+        if FileManager.default.fileExists(atPath: url.path) {
+            let backup = LocalStorage.directory.appendingPathComponent("course-schedule.backup.json")
+            try Data(contentsOf: url).write(to: backup, options: .atomic)
+            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: backup.path)
+        }
+        try data.write(to: url, options: .atomic)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+    }
+}
+
+enum CourseArchiveReader {
+    static func calendarTexts(from url: URL) throws -> [String] {
+        let namesData = try runUnzip(["-Z1", url.path], maximumBytes: 64 * 1024)
+        guard let listing = String(data: namesData, encoding: .utf8) else {
+            throw CalendarError.message("SIS 课表 ZIP 的文件名不是 UTF-8。")
+        }
+        let names = listing.split(separator: "\n").map(String.init).filter { $0.lowercased().hasSuffix(".ics") }
+        guard !names.isEmpty, names.count <= 100 else {
+            throw CalendarError.message("SIS 课表 ZIP 中没有 .ics 文件，或文件数量过多。")
+        }
+        var result: [String] = []
+        var total = 0
+        for name in names {
+            let data = try runUnzip(["-p", url.path, name], maximumBytes: 1024 * 1024)
+            total += data.count
+            guard total <= 10 * 1024 * 1024, let text = String(data: data, encoding: .utf8) else {
+                throw CalendarError.message("SIS 课表文件过大或不是 UTF-8。")
+            }
+            result.append(text)
+        }
+        return result
+    }
+    private static func runUnzip(_ arguments: [String], maximumBytes: Int) throws -> Data {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
+        process.arguments = arguments
+        let output = Pipe(); process.standardOutput = output
+        process.standardError = FileHandle.nullDevice
+        try process.run()
+        var data = Data()
+        while true {
+            let chunk = output.fileHandleForReading.availableData
+            if chunk.isEmpty { break }
+            data.append(chunk)
+            if data.count > maximumBytes {
+                process.terminate()
+                process.waitUntilExit()
+                throw CalendarError.message("SIS 课表文件过大。")
+            }
+        }
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else { throw CalendarError.message("无法读取 SIS 课表 ZIP。") }
+        return data
+    }
+}

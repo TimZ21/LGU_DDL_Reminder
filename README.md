@@ -22,6 +22,7 @@ SwiftUI · macOS 13+ · 中文 / English · MIT
 - **清晰的日期与时间**：按日期分组，详情显示星期、时分秒和时区；支持即将截止、未来 7 天、已逾期、已完成及搜索。
 - **系统提醒**：默认提前 24 小时、3 小时、30 分钟，以及到期时提醒，可在设置中调整。
 - **补充遗漏的 DDL**：支持手动添加和 `.ics` 文件导入；文件导入后不会自动更新。
+- **课程表**：侧边栏打开周课表；在 SIS「我的课程表」下载 **Download ICS Files** 的 ZIP 后可直接导入，也可导入单个 `.ics` 或手动添加。若已连接的 Blackboard 日历含有上课时段，也会随 DDL 同步。支持课程名称、地点、星期、时间、日期范围和单双周编辑；手动修改与隐藏在后续导入时保留。SIS 目前提供登录后生成的 ZIP，未发现可直接订阅的固定链接，因此更新 SIS 课表需重新下载并导入。课程表与 DDL 分开保存，不根据标题自动合并事项。
 - **Outlook 邮件候选**：可导入从 Outlook 下载的 `.eml` 邮件，在本机提取候选 DDL，核对后再添加；拥有 Microsoft Entra 应用注册权限时，也可用 Microsoft Graph 只读授权扫描最近 180 天的收件箱。
 - **本地完成状态**：完成后取消相关未来提醒；再次同步、重导入或已识别事项改期时保留完成状态，只有手动恢复待办才会取消完成。来源删除或取消的事项会在同步后移除。
 - **中英双语与紫金主题**：语言即时切换并自动保存，界面与后续通知使用所选语言；课程标题与备注保留来源原文。
@@ -133,7 +134,7 @@ SwiftUI · macOS 13+ · 中文 / English · MIT
 
 - 拾期读取 Blackboard 日历订阅中的全部事项，可能包括作业、考试、上课时间与个人事件。仅写在公告、PDF 或课程说明中的 DDL，需要手动补充；邮件中的日期可通过 Outlook 邮件窗口导入并核对。
 - 订阅链接保存在 **macOS 钥匙串**。软件不读取或保存学校密码；应用内登录使用临时 WebKit 会话，不持久化登录 cookie。
-- 任务、完成状态和设置保存在 `~/Library/Application Support/DDLReminder/deadlines.json`；上一次保存的内容备份为同目录下的 `deadlines.backup.json`。备份课程数据时也应保护这些文件。
+- 任务、完成状态和设置保存在 `~/Library/Application Support/DDLReminder/deadlines.json`；上一次保存的内容备份为同目录下的 `deadlines.backup.json`。课程表单独保存在同目录的 `course-schedule.json`，并备份为 `course-schedule.backup.json`。备份个人数据时请一并保护这些文件。
 - 应用直接向日历服务器发起请求，不使用自建云端服务。HTTPS 重定向仅允许同一主机。
 - Outlook 直接扫描使用微软登录与 Microsoft Graph；拾期不获取学校密码，不将邮件正文上传到项目服务器。ChatGPT/Codex 的 Outlook 连接与拾期的 Graph 授权彼此独立，不能共用令牌。
 
@@ -160,7 +161,7 @@ Resources/                 Info.plist、品牌素材与示例日历
 scripts/                   构建、测试、图标生成与网络诊断
 ```
 
-测试使用 XCTest；仅有 Command Line Tools、无法使用 XCTest 时，脚本使用仓库内的轻量测试运行器。当前 25 项测试覆盖日期转换、夏令时、全天事项、重复例外、提醒计划、同步合并、UID 变化后的完成状态、跨来源重导入、旧版数据迁移和语言设置。
+测试使用 XCTest；仅有 Command Line Tools、无法使用 XCTest 时，脚本使用仓库内的轻量测试运行器。当前 35 项测试覆盖日期转换、夏令时、全天事项、重复例外、提醒计划、同步合并、UID 变化后的完成状态、跨来源重导入、旧版数据迁移、语言设置和课表导入。
 
 1.1.1 修复了部分日历每次导出生成新 UID，导致已完成事项变回待办的问题。优先按日历身份匹配；UID 改变时，仅在标题、课程、实际截止时刻和时间类型均一致且双方唯一时匹配，避免误把其他任务标记完成。文件导入与在线同步共享这套规则；重复事件的各次事项分别保存完成状态。
 
@@ -211,6 +212,7 @@ This is an independently developed, free and open-source project, not an officia
 - **Clear dates and times:** events grouped by date; details include the weekday, seconds, and time zone. Filter upcoming, next 7 days, overdue, or completed items, and search your tasks.
 - **System reminders:** alerts 24 hours, 3 hours, and 30 minutes before a deadline, and at the deadline, with configurable reminder times.
 - **Add missing deadlines:** create tasks manually or import `.ics` files. File imports do not update automatically.
+- **Class schedule:** open the weekly view from the sidebar. Download the **Download ICS Files** ZIP from SIS “My Class Schedule” and import it directly; individual `.ics` files and manual classes also work. Timed class events in a connected Blackboard calendar sync when available. Edit names, locations, days, times, date ranges, and alternating weeks. Edits and hidden events survive later imports. SIS currently generates a ZIP after sign-in and does not expose a fixed subscription link, so download and import a new ZIP to refresh. The schedule is stored separately from deadlines, with no title-based merging.
 - **Outlook mail candidates:** import downloaded `.eml` messages for local deadline extraction and review. If your school permits an Entra app registration, you can also grant read-only Microsoft Graph access to scan recent inbox mail.
 - **Local completion status:** completing a task removes its future reminders. Syncs, reimports, and reschedules of recognized tasks preserve completion until you mark them incomplete yourself. Deleted or cancelled source items are removed on sync.
 - **Chinese/English and purple/gold styling:** language changes apply immediately and persist, including subsequent notifications. Original course titles and notes are preserved.

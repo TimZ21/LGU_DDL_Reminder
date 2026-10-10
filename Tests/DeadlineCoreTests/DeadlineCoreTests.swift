@@ -10,6 +10,51 @@ final class DeadlineCoreTests: XCTestCase {
     func feed(_ body: String) -> String { "BEGIN:VCALENDAR\r\nVERSION:2.0\r\n" + body + "\r\nEND:VCALENDAR" }
     func event(_ body: String) -> String { "BEGIN:VEVENT\r\n" + body + "\r\nEND:VEVENT" }
 
+    func testCourseCalendarImportsWeeklyMeetingsAndExceptions() throws {
+        let text = feed(event("UID:class-1\r\nSUMMARY:CIE6007 Machine Learning\r\nLOCATION:TA 101\r\nDTSTART;TZID=Asia/Shanghai:20260907T143000\r\nDTEND;TZID=Asia/Shanghai:20260907T161500\r\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20261216T235900\r\nEXDATE;TZID=Asia/Shanghai:20261007T143000"))
+        let meetings = try CourseCalendarParser().parse(text, source: .subscription, timeZone: zone).meetings
+        XCTAssertEqual(meetings.count, 2)
+        XCTAssertTrue(meetings.allSatisfy { $0.location == "TA 101" && $0.startMinute == 14 * 60 + 30 && $0.endMinute == 16 * 60 + 15 })
+        let monday = meetings.first { $0.weekday == 1 }!
+        let wednesday = meetings.first { $0.weekday == 3 }!
+        XCTAssertTrue(monday.occurs(on: date("2026-10-05T00:00:00+08:00"), timeZone: zone))
+        XCTAssertTrue(!wednesday.occurs(on: date("2026-10-07T00:00:00+08:00"), timeZone: zone))
+        XCTAssertTrue(wednesday.occurs(on: date("2026-10-14T00:00:00+08:00"), timeZone: zone))
+    }
+
+    func testCourseCalendarKeepsSeparateSessionsWithoutTaskMatching() throws {
+        let body = event("UID:one\r\nSUMMARY:Machine Learning\r\nDTSTART:20261012T090000\r\nDTEND:20261012T100000") + "\r\n" +
+            event("UID:two\r\nSUMMARY:Machine Learning\r\nDTSTART:20261012T090000\r\nDTEND:20261012T100000")
+        let result = try CourseCalendarParser().parse(feed(body), source: .file, timeZone: zone)
+        XCTAssertEqual(result.meetings.count, 2)
+        XCTAssertTrue(result.meetings[0].id != result.meetings[1].id)
+    }
+
+    func testCourseCalendarPreservesUserEditForBlackboardEvent() throws {
+        let first = feed(event("UID:course-a\r\nSUMMARY:Machine Learning\r\nDTSTART:20261012T090000\r\nDTEND:20261012T100000\r\nRRULE:FREQ=WEEKLY;COUNT=4"))
+        let changed = feed(event("UID:course-a\r\nSUMMARY:Machine Learning\r\nDTSTART:20261012T093000\r\nDTEND:20261012T103000\r\nRRULE:FREQ=WEEKLY;COUNT=4"))
+        let original = try CourseCalendarParser().parse(first, source: .blackboard, timeZone: zone).meetings.first!
+        let refreshed = try CourseCalendarParser().parse(changed, source: .blackboard, timeZone: zone).meetings.first!
+        XCTAssertEqual(original.id, refreshed.id)
+        var schedule = CourseSchedule()
+        schedule.meetings = [original]
+        var edited = original; edited.location = "Room 203"
+        schedule.overrides[original.id] = edited
+        schedule.meetings = [refreshed]
+        XCTAssertEqual(schedule.visibleMeetings.first?.location, "Room 203")
+        XCTAssertEqual(schedule.visibleMeetings.first?.startMinute, 9 * 60)
+    }
+
+    func testSISCalendarChineseTimeZoneAndCount() throws {
+        let text = "BEGIN:VCALENDAR\rVERSION:2.0\rBEGIN:VEVENT\rUID:sis-class\rDTSTART;TZID=\"中国标准时间\":20260908T180000\rDTEND;TZID=\"中国标准时间\":20260908T193000\rRRULE:FREQ=WEEKLY;COUNT=15;BYDAY=TU\rSUMMARY;LANGUAGE=zh-cn:CIE6007 - Machine Learning\rLOCATION:XILI CAMPUS 6E506\rEND:VEVENT\rEND:VCALENDAR"
+        let meetings = try CourseCalendarParser().parse(text, source: .sis, timeZone: zone).meetings
+        XCTAssertEqual(meetings.count, 1)
+        XCTAssertEqual(meetings[0].weekday, 2)
+        XCTAssertEqual(meetings[0].course, "CIE6007 - Machine Learning")
+        XCTAssertTrue(meetings[0].occurs(on: date("2026-10-06T00:00:00+08:00"), timeZone: zone))
+        XCTAssertFalse(meetings[0].occurs(on: date("2026-12-22T00:00:00+08:00"), timeZone: zone))
+    }
+
     func testOutlookMailExtractsDateOnlyAndPreciseTimeWithoutGuessing() {
         let messages = [
             MailMessage(id: "registration", subject: "CIE6006 Project Team Registration",
@@ -434,6 +479,10 @@ final class DeadlineCoreTests: XCTestCase {
     }
 
     static var allTests = [
+        ("课程日历每周课程和停课日期", testCourseCalendarImportsWeeklyMeetingsAndExceptions),
+        ("课程日历保留独立事件", testCourseCalendarKeepsSeparateSessionsWithoutTaskMatching),
+        ("Blackboard 课程同步保留手动修改", testCourseCalendarPreservesUserEditForBlackboardEvent),
+        ("SIS 中文时区课表", testSISCalendarChineseTimeZoneAndCount),
         ("重复邮件候选交由人工判断", testRepeatedMailCandidatesRemainSeparateForHumanReview),
         ("Outlook 嵌套 MIME 邮件导入", testOutlookEMLImportReadsNestedMultipartWithoutAttachment),
         ("Outlook EML 文件导入", testOutlookEMLImportReadsMultipartTextAndStableIdentity),

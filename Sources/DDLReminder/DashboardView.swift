@@ -176,6 +176,7 @@ struct DashboardView: View {
         .sheet(isPresented: $store.showSettings) { ReminderSettingsView().environmentObject(store) }
         .sheet(isPresented: $store.showEditor) { DeadlineEditor(item: store.editingDeadline).environmentObject(store) }
         .sheet(isPresented: $store.showOutlook) { OutlookView().environmentObject(store) }
+        .sheet(isPresented: $store.showCourseSchedule) { CourseScheduleView().environmentObject(store) }
         .sheet(item: $selectedItem) { DeadlineDetailView(itemID: $0.id).environmentObject(store) }
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [UTType(filenameExtension: "ics") ?? .data]) { result in
             switch result { case .success(let url): store.importFile(url); case .failure(let error): store.errorMessage = error.localizedDescription }
@@ -208,6 +209,14 @@ struct DashboardView: View {
                         .foregroundStyle(filter == value ? Palette.accent : .primary)
                 }.buttonStyle(.plain).padding(.bottom, 4)
             }
+            Button { store.showCourseSchedule = true } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "calendar.day.timeline.left").frame(width: 18)
+                    Text(store.t("课程表", "Class schedule")).font(.system(size: 13))
+                    Spacer()
+                    Text("\(store.courseSchedule.visibleMeetings.count)").font(.system(size: 11)).foregroundStyle(.secondary)
+                }.padding(.horizontal, 12).padding(.vertical, 11)
+            }.buttonStyle(.plain)
             Spacer()
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 6) {

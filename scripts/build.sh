@@ -9,16 +9,16 @@ APP_PATH="$TASK_ROOT/dist/拾期.app"
 rm -rf "$APP_PATH/Contents/Resources"
 mkdir -p "$TASK_BUILD_ROOT/module-cache" "$APP_PATH/Contents/MacOS" "$APP_PATH/Contents/Resources"
 cd "$TASK_ROOT"
-xcrun swiftc -sdk "$TASK_SDK_PATH" -swift-version 5 -O -target "$TASK_ARCH-apple-macosx13.0" \
+xcrun swiftc "${TASK_SWIFT_CC_FLAGS[@]}" -sdk "$TASK_SDK_PATH" -swift-version 5 -O -target "$TASK_ARCH-apple-macosx13.0" \
   -module-cache-path "$TASK_BUILD_ROOT/module-cache" -parse-as-library \
   -emit-module -emit-library -static -module-name DeadlineCore \
   Sources/DeadlineCore/*.swift -o "$TASK_BUILD_ROOT/libDeadlineCore.a" \
   -emit-module-path "$TASK_BUILD_ROOT/DeadlineCore.swiftmodule"
-xcrun swiftc -sdk "$TASK_SDK_PATH" -swift-version 5 -O -target "$TASK_ARCH-apple-macosx13.0" \
+xcrun swiftc "${TASK_SWIFT_CC_FLAGS[@]}" -sdk "$TASK_SDK_PATH" -swift-version 5 -O -target "$TASK_ARCH-apple-macosx13.0" \
   -module-cache-path "$TASK_BUILD_ROOT/module-cache" -parse-as-library \
   -I "$TASK_BUILD_ROOT" -L "$TASK_BUILD_ROOT" -lDeadlineCore \
   Sources/DDLReminder/*.swift -o "$APP_PATH/Contents/MacOS/DDLReminder"
-xcrun swiftc -sdk "$TASK_SDK_PATH" -module-cache-path "$TASK_BUILD_ROOT/module-cache" scripts/MakeIcon.swift -o "$TASK_BUILD_ROOT/MakeIcon"
+xcrun swiftc "${TASK_SWIFT_CC_FLAGS[@]}" -sdk "$TASK_SDK_PATH" -module-cache-path "$TASK_BUILD_ROOT/module-cache" scripts/MakeIcon.swift -o "$TASK_BUILD_ROOT/MakeIcon"
 "$TASK_BUILD_ROOT/MakeIcon" "$TASK_BUILD_ROOT/AppIcon.iconset" "$APP_PATH/Contents/Resources/AppIcon.icns"
 cp Resources/Info.plist "$APP_PATH/Contents/Info.plist"
 codesign --force --sign - --identifier cn.shuning.ddlreminder "$APP_PATH"
