@@ -25,3 +25,11 @@ private/
 *.certSigningRequest
 *.cer
 *.keychain-db
+
+# Windows / .NET build products
+**/bin/
+**/obj/
+**/TestResults/
+*.user
+*.suo
+.vs/

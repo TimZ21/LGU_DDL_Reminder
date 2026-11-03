@@ -1,0 +1,44 @@
+name: Windows build and tests
+on:
+  workflow_dispatch:
+  push:
+    paths: ['windows/**', '.github/workflows/windows.yml']
+  pull_request:
+    paths: ['windows/**', '.github/workflows/windows.yml']
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_GENERATE_ASPNET_CERTIFICATE: 'false'
+      AVALONIA_TELEMETRY_OPTOUT: '1'
+    strategy:
+      matrix:
+        runtime: [win-x64, win-arm64]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+      - name: Test and package
+        shell: pwsh
+        run: ./windows/build.ps1 -Runtime '${{ matrix.runtime }}'
+      - name: Isolated UI checks
+        shell: pwsh
+        run: dotnet run --project windows/Shiqi.UiTests -c Release -- dist/windows-preview/headless
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Shiqi-windows-preview-${{ matrix.runtime }}
+          path: |
+            dist/windows/1.2.0/*-${{ matrix.runtime }}-unsigned.zip
+            dist/windows/1.2.0/*-${{ matrix.runtime }}-unsigned.sha256
+          if-no-files-found: error
+          retention-days: 14
