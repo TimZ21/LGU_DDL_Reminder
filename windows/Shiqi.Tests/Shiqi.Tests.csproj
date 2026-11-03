@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Shiqi.Core/Shiqi.Core.csproj" />
+    <Compile Include="../Shiqi.Desktop/WindowsCredential.cs" Link="WindowsCredential.cs" />
+  </ItemGroup>
+</Project>

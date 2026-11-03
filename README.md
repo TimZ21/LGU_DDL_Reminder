@@ -8,6 +8,10 @@ iOS 开发版的环境安装、运行和使用说明见 **[iOS 中英双语指�
 
 For the iOS development version, see the **[bilingual iOS guide](iOS/README.md)** for setup, usage, and validation status. Mobile and Mac versions share core logic and keep separate app data.
 
+Windows 预览版的安装、使用、源码构建和验证范围见 **[Windows 中英双语指南](windows/README.md)**。Windows 使用独立的 C# / Avalonia 工程和数据目录；现有 macOS / iOS 工程保持独立。
+
+For the Windows preview, see the **[bilingual Windows guide](windows/README.md)** for installation, usage, builds and validation limits. Windows uses a separate C# / Avalonia project and data directory.
+
 **[中文说明](#zh-cn) · [English guide](#en)**
 
 SwiftUI · macOS 13+ · iOS 17+（开发版 / in development）· 中文 / English · MIT

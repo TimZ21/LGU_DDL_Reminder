@@ -1,0 +1,89 @@
+拾期 / Shiqi — Windows 1.2.0 Preview 1
+
+中文
+
+系统：Windows 11（建议 24H2 或以上）；Windows 10 22H2 为兼容目标。
+架构：Intel / AMD 电脑使用 win-x64；ARM 电脑使用 win-arm64。
+本预览版本尚未完成真实 Windows 设备上的通知、托盘和休眠恢复测试。
+
+安装
+1. 下载与你的电脑架构匹配的 Shiqi Windows ZIP。
+2. 右键 ZIP，选择“全部解压”。将整个 Shiqi 文件夹放到固定位置，例如你的用户文件夹。
+3. 运行 Shiqi 文件夹中的 Shiqi.exe。不要仅复制 EXE；旁边的 DLL 和 Assets 也是必需文件。
+4. 需要桌面快捷方式时，右键 Shiqi.exe 创建快捷方式。
+安装包包含 .NET 运行时，无需另外安装 .NET、Python 或 Node.js，不需要管理员权限。
+本包未进行 Windows 代码签名，Windows 可能显示未知发布者/SmartScreen 提示。
+请确认下载来源并核对 SHA-256；仅在信任该来源时使用“更多信息 → 仍要运行”（若系统提供）。
+组织管理的电脑可能不允许运行。不要关闭 Defender 或系统级安全保护。
+
+连接 Blackboard
+1. 点击“管理连接 → 打开 Blackboard”，在你自己的浏览器中登录 bb.cuhk.edu.cn。
+2. 打开 Calendar，选择 Get External Calendar Link / Share Calendar，复制完整共享链接。
+3. 回到拾期，粘贴完整链接并点击“连接并同步”。不要仅粘贴网站首页或 calendarFeed 路径前缀。
+链接保存在当前 Windows 用户的凭据管理器中，不会存入任务 JSON 或公开仓库。
+如果无法访问学校服务器，检查校园网/VPN。软件不会忽略 HTTPS 证书错误。
+
+使用与提醒
+- 支持自动/手动同步、ICS 文件导入、手动任务、搜索、完成与恢复待办。
+- 设置中可切换中英文、显示时区、同步间隔和提前提醒分钟数。
+- 默认显示深圳 (UTC+8)。课程和任务原文不随界面语言翻译。
+- 关闭窗口后继续在系统托盘运行；点击托盘图标重新打开，右键可退出。
+- 系统通知依赖软件保持运行。退出、关机或睡眠期间无法准时通知；恢复后仅补发最近 5 分钟的提醒。
+- 仅日期事项在前一天和当天 09:00 提醒，并注明具体时间待确认。
+- 先用“设置 → 发送测试通知”检查 Windows 通知及勿扰设置。发出通知请求不代表系统一定显示。
+- “登录 Windows 时启动拾期”默认关闭；使用此功能后请保持软件文件夹位置不变。
+- 标记完成只更新拾期，不代表 Blackboard 已提交，也不会提交作业。
+- Windows 版不提供 Apple 提醒事项同步，也不会自动同步 Mac 版的本地数据。
+
+本地数据与更新
+任务和设置保存在 %LOCALAPPDATA%\Shiqi\deadlines.json；上一版本为 deadlines.backup.json。
+本地数据无法读取时，软件停止保存以保护原文件。备份文件也可能包含私人课程信息。
+更新前先从托盘退出，解压新的完整文件夹替换程序；本地数据保留在上述独立目录。
+卸载时先关闭“登录 Windows 时启动拾期”并断开连接，再退出并删除软件文件夹。
+如果需要删除任务数据，可在备份后自行删除上述 Shiqi 数据目录。
+
+English
+
+System: Windows 11 (24H2 or later recommended); Windows 10 22H2 is a compatibility target.
+Use win-x64 on Intel/AMD computers; use win-arm64 on ARM computers.
+This preview still requires real Windows-device tests for notifications, tray behavior, and wake from sleep.
+
+Installation
+1. Download the Windows ZIP matching your computer's architecture.
+2. Right-click the ZIP and choose Extract All. Keep the whole Shiqi folder in a permanent user-owned location.
+3. Run Shiqi.exe inside that folder. Keep all DLLs and Assets alongside it; do not copy only the EXE.
+4. Optionally create a desktop shortcut to Shiqi.exe.
+The .NET runtime is included. No separate .NET, Python, Node.js, or administrator access is required.
+This package is not Windows code-signed; an unknown-publisher/SmartScreen warning may appear.
+Verify the source and SHA-256. Only if you trust it, use More info → Run anyway when Windows offers it.
+Managed computers may disallow this. Do not disable Defender or system-wide security protections.
+
+Connect Blackboard
+1. Choose Connection → Open Blackboard and sign in to bb.cuhk.edu.cn in your own browser.
+2. Open Calendar → Get External Calendar Link / Share Calendar, and copy the full sharing URL.
+3. Paste that URL into Shiqi and choose Connect & sync. The homepage or calendarFeed prefix alone will not work.
+The subscription is stored in your Windows Credential Manager, not in the task JSON or public repository.
+Check campus network/VPN access if necessary. HTTPS certificate errors are not bypassed.
+
+Usage and reminders
+- Auto/manual sync, ICS file import, manual deadlines, search, completion and reopening.
+- Settings include Chinese/English, display time zone, sync interval and reminder offsets in minutes.
+- Default display: Shenzhen (UTC+8). Course content retains its original language.
+- Closing the window keeps the app in the system tray. Click its icon to reopen; right-click to quit.
+- Notifications require the app to keep running. Quit, shutdown or sleep can prevent timely alerts.
+  Only reminders due within the last five minutes are caught up on resume.
+- Date-only items remind at 09:00 on the previous day and due day, with the exact time marked unconfirmed.
+- Use Settings → Send test notification first. Windows Do Not Disturb and notification settings can suppress display.
+- Start at Windows sign-in is off by default. Keep the program folder in place after enabling it.
+- Completion only updates Shiqi; it never submits work or changes Blackboard grades/submission state.
+- Apple Reminders sync is unavailable on Windows. Mac and Windows local data do not sync automatically.
+
+Data, updates and removal
+Tasks/preferences: %LOCALAPPDATA%\Shiqi\deadlines.json; previous save: deadlines.backup.json.
+Unreadable data disables saving to protect the original. Backups may contain private course information.
+Quit from the tray before replacing the full application folder. Data stays in the separate directory above.
+To remove, disable start at sign-in, disconnect, quit, and delete the application folder.
+Back up and manually remove the data directory too if you want to delete your tasks.
+
+LGU / Longgang University is a student nickname. This is an independent, free, MIT-licensed project,
+not an official university or Blackboard product. No university emblem is included.

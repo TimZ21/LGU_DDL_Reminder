@@ -1,0 +1,26 @@
+Shiqi Windows — third-party components
+
+Project source and original calendar artwork: repository MIT LICENSE.
+This file does not relicense third-party components. Their original licenses apply.
+
+Avalonia 11.3.22 — MIT
+https://github.com/AvaloniaUI/Avalonia/blob/master/licence.md
+
+SkiaSharp and HarfBuzzSharp (transitive Avalonia rendering dependencies) — MIT
+https://github.com/mono/SkiaSharp/blob/main/LICENSE.md
+
+Skia — BSD-3-Clause
+https://skia.googlesource.com/skia/+/main/LICENSE
+
+HarfBuzz — permissive license, with MIT-style license for most code
+https://github.com/harfbuzz/harfbuzz/blob/main/COPYING
+
+MicroCom.Runtime (transitive Avalonia dependency) — MIT
+https://github.com/kekekeks/MicroCom/blob/master/LICENSE
+
+.NET runtime and libraries — MIT, with included third-party notices
+https://github.com/dotnet/runtime/blob/main/LICENSE.TXT
+https://github.com/dotnet/runtime/blob/main/THIRD-PARTY-NOTICES.TXT
+
+Full license texts and runtime notices supplied by upstream packages must be
+preserved in distribution. See the licenses directory bundled by the packaging script.
