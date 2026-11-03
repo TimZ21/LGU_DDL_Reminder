@@ -1,24 +1,50 @@
 # 拾期 · Shiqi — DDL Reminder
 
-给龙大学子的免费开源软件：轻量原生 macOS 截止日期提醒工具，适配校园 Blackboard。
+给龙大学子的免费开源 DDL 提醒工具，适配校园 Blackboard。提供 macOS 正式版和 Windows 预览版。
 
-Free, open-source software for LGU students: a lightweight native macOS deadline reminder for the campus Blackboard.
+Free, open-source deadline reminders for LGU students using the campus Blackboard. Available for macOS, with a Windows preview.
+
+**[中文说明](#zh-cn) · [English guide](#en)**
+
+## 下载 · Downloads
+
+| 平台 / Platform | 版本 / Version | 直接下载 / Direct download | 发布状态 / Release status |
+| --- | --- | --- | --- |
+| Mac · Apple Silicon（M 系列 / M-series），macOS 13+ | 1.2.0 | **[Mac ZIP][mac-zip]** | 正式版，未公证 / Stable, unnotarized |
+| Windows · Intel / AMD（x64） | 1.2.0 Preview 1 | **[Windows x64 ZIP][windows-x64-zip]** | 预览版，未签名 / Preview, unsigned |
+| Windows · ARM64 | 1.2.0 Preview 1 | **[Windows ARM64 ZIP][windows-arm64-zip]** | 预览版，未签名 / Preview, unsigned |
+
+安装说明：**[Mac 中文](#mac-install-zh) · [Windows 中文](#windows-install-zh) · [Mac English](#mac-install-en) · [Windows English](#windows-install-en)**。
+
+发布页 / Release pages：**[Mac 1.2.0][mac-release] · [Windows Preview 1][windows-release]**。安装说明文件 / Installation guides：**[Mac（中英双语 / bilingual）][mac-install-guide] · [Windows（中英双语 / bilingual）][windows-install-guide]**。SHA-256：**[Mac][mac-checksums] · [Windows][windows-checksums]**。
+
+Mac 包仅适用于 Apple Silicon，不包含 Intel Mac 版本。Windows 建议使用 Windows 11 24H2 或以上；Windows 10 22H2 x64 为兼容目标。**Windows 预览版仍需真实 Windows 电脑验证，尤其是通知、托盘、凭据保存、登录启动和休眠恢复。**
+
+The Mac package is for Apple Silicon only; no Intel Mac binary is provided. Windows 11 24H2 or later is recommended; Windows 10 22H2 x64 is a compatibility target. **The Windows preview still needs testing on a real Windows computer, especially notifications, tray behavior, saved credentials, sign-in startup, and sleep/resume.**
+
+普通用户请下载上表的应用 ZIP；GitHub 自动生成的 **Source code (zip / tar.gz)** 是源码，不含可直接运行的软件。两个平台都无需自行安装开发环境。
+
+For a ready-to-run app, use the ZIP links above. GitHub's automatic **Source code (zip / tar.gz)** downloads contain source code, not compiled apps. Neither app package requires a development environment.
 
 iOS 开发版的环境安装、运行和使用说明见 **[iOS 中英双语指南](iOS/README.md)**。手机端与 macOS 版独立，共用核心逻辑。验证状态见该指南。
 
 For the iOS development version, see the **[bilingual iOS guide](iOS/README.md)** for setup, usage, and validation status. Mobile and Mac versions share core logic and keep separate app data.
 
-**[中文说明](#zh-cn) · [English guide](#en)**
+Windows 预览版的使用、源码构建和验证范围见 **[Windows 中英双语指南][windows-source-guide]**。Windows 源码目前位于 `v1.2.0-windows-preview.1` 标签；构建时请检出该标签，不能仅下载 `main`。Windows 使用独立的 C# / Avalonia 工程和数据目录。
 
-SwiftUI · macOS 13+ · iOS 17+（开发版 / in development）· 中文 / English · MIT
+For Windows usage, source builds, and validation limits, see the **[bilingual Windows guide][windows-source-guide]**. Windows source is currently on the `v1.2.0-windows-preview.1` tag; check out that tag to build it rather than downloading only `main`. It uses a separate C# / Avalonia project and data directory.
+
+SwiftUI（macOS / iOS）· Avalonia（Windows）· 中文 / English · MIT
 
 <a id="zh-cn"></a>
 
 ## 中文说明
 
-拾期通过 [bb.cuhk.edu.cn](https://bb.cuhk.edu.cn) 的官方日历订阅链接读取日历事项，显示准确的截止日期、时间与倒计时，并通过 macOS 系统通知提醒。运行时无需 Python、Node.js 或后台服务器。
+拾期通过 [bb.cuhk.edu.cn](https://bb.cuhk.edu.cn) 的官方日历订阅链接读取日历事项，显示准确的截止日期、时间与倒计时，并通过系统通知提醒。运行时无需 Python、Node.js 或后台服务器。
 
 这是独立开发的免费开源项目，非学校或 Blackboard 官方产品，未经校方背书。「龙大」是学生给位于龙岗的港中深起的非正式昵称「龙岗大学」，英文简称 **LGU（Longgang University）**；不是学校的正式名称。
+
+下方功能、系统要求与详细使用说明以 **macOS 版**为主；Windows 用户请先阅读 **[Windows 安装与首次使用](#windows-install-zh)**，平台差异见 [Windows 指南][windows-source-guide]。
 
 ### 功能
 
@@ -42,17 +68,25 @@ SwiftUI · macOS 13+ · iOS 17+（开发版 / in development）· 中文 / Engli
 
 默认显示 **深圳 (UTC+8)**，底层仍使用标准的 `Asia/Shanghai` 时区。香港同为 UTC+8。城市名称和语言的变化不会改变已经保存的实际截止时刻。
 
-### 安装
+<a id="mac-install-zh"></a>
+
+### Mac 安装
 
 #### 方式一：使用发布包
 
-如果仓库的 **Releases** 页面提供安装包：
-
-1. 下载适合自己 Mac 架构的 `拾期.zip` 并解压。
+1. 下载 **[Mac 1.2.0 ZIP][mac-zip]**（Apple Silicon，macOS 13+），双击解压。
 2. 将 `拾期.app` 拖入「应用程序」文件夹。
 3. 从「应用程序」打开拾期，按下方说明连接 Blackboard 和启用通知。
 
-请查看具体 Release 的签名说明：旧版 1.1.2 和默认开发构建使用 **ad-hoc 签名**，尚未经过 Apple 公证，下载后可能被系统阻止打开。正式发布脚本支持 Developer ID 签名与 Apple 公证，但必须先配置有效证书和公证凭据；脚本配置完成不代表现有安装包已公证。源码仓库忽略 `dist/`，下载源码 ZIP 不会附带已编译的应用。
+**当前 Mac 1.2.0 使用 ad-hoc 签名，没有 Developer ID 签名，也未经过 Apple 公证。** 首次打开可能显示「Apple 无法验证是否包含恶意软件」：
+
+1. 在提示中点击「完成」，保留应用。
+2. 打开「系统设置」→「隐私与安全性」，向下找到「安全性」。
+3. 在拾期被阻止的提示旁点击 **「仍要打开」**，按系统提示验证身份，再确认「打开」。
+
+仅在确认下载来自本项目且信任该文件时操作；可用 `shasum -a 256` 检查 ZIP，与 [Mac SHA-256 文件][mac-checksums]核对。单位管理的电脑可能不提供放行选项，不要关闭系统级安全保护。参见 [Apple 官方说明](https://support.apple.com/zh-cn/102445)。
+
+更新前先退出拾期，再用新版替换「应用程序」中的旧应用；个人任务和设置保存在独立数据目录。完整说明见 [Mac 安装指南][mac-install-guide]。
 
 #### 方式二：从源码构建
 
@@ -80,7 +114,28 @@ SwiftUI · macOS 13+ · iOS 17+（开发版 / in development）· 中文 / Engli
 
 安装完整 Xcode 后，macOS 脚本仍优先使用可用的 Command Line Tools；iOS 脚本独立选择 Xcode。需要改用其他工具链时，可显式设置 `DEVELOPER_DIR`。
 
-### 首次使用：连接 Blackboard
+<a id="windows-install-zh"></a>
+
+### Windows 安装与首次使用（预览版）
+
+1. 根据电脑架构下载 **[Windows x64 ZIP][windows-x64-zip]**（Intel / AMD）或 **[Windows ARM64 ZIP][windows-arm64-zip]**（ARM 电脑）。可在「设置」→「系统」→「系统信息」（或「关于」）查看「系统类型」。
+2. 右键 ZIP，选择「全部解压」，将完整的 `Shiqi` 文件夹放到固定的用户目录。不要在 ZIP 中直接运行。
+3. 打开文件夹中的 **`Shiqi.exe`**。保留旁边的 DLL 和 `Assets`，不要只移动 EXE；可为 EXE 创建快捷方式。
+4. 安装包已包含 .NET 运行时，无需另装 .NET、Python、Node.js 或以管理员身份运行。
+
+**Windows 包未进行代码签名。** 若出现未知发布者或 SmartScreen 提示，先确认来源并与 [Windows SHA-256 文件][windows-checksums]核对；PowerShell 可用 `Get-FileHash .\下载的文件.zip -Algorithm SHA256`。仅在信任文件且系统提供选项时，选择 **「更多信息」→「仍要运行」**。组织管理的电脑可能不允许放行；不要关闭 Defender 或系统级安全保护。
+
+连接并检查提醒：
+
+1. 点击「管理连接」→「打开 Blackboard」，在自己的浏览器中登录，进入全局 **Calendar**，选择 **Get External Calendar Link / Share Calendar**，复制完整个人日历共享链接。
+2. 回到拾期粘贴链接，点击「连接并同步」。核对任务日期、具体时间和 **深圳 (UTC+8)**；不要公开共享链接中的个人访问令牌。
+3. 打开「设置」，选择中文或英文、提醒时点等，再点击「保存设置」。用「发送测试通知」检查通知；Windows 通知设置和勿扰模式可能影响显示。
+
+**Windows 提醒依赖程序保持运行。** 关闭窗口会保留系统托盘进程；点击托盘图标重新打开，右键可退出。退出、关机或睡眠期间无法准时提醒，恢复后仅补发最近 5 分钟内的提醒。「登录 Windows 时启动拾期」默认关闭。
+
+Windows 不支持 Apple「提醒事项」同步；Mac 与 Windows 的本地任务和完成状态也不会自动跨设备同步。更新前从托盘退出，替换完整程序文件夹；数据保存在 `%LOCALAPPDATA%\Shiqi`。更多使用、卸载和实机测试步骤见 [Windows 安装指南][windows-install-guide]与 [Windows 源码指南][windows-source-guide]。
+
+### 首次使用：连接 Blackboard（macOS）
 
 1. 在拾期点击「连接 Blackboard」。可以在应用内登录，也可以点击「在默认浏览器打开 Blackboard」。
 2. 使用自己的学校账号登录，打开**全局「日历 / Calendar」**。
@@ -238,9 +293,11 @@ Hardened Runtime 的 EventKit 资源权限保留可选提醒事项同步；没�
 
 ## English guide
 
-Shiqi reads calendar events from the official subscription feed on [bb.cuhk.edu.cn](https://bb.cuhk.edu.cn), displays exact deadlines and countdowns, and sends macOS notifications. No Python, Node.js, or background server is required at runtime.
+Shiqi reads calendar events from the official subscription feed on [bb.cuhk.edu.cn](https://bb.cuhk.edu.cn), displays exact deadlines and countdowns, and sends system notifications. No Python, Node.js, or background server is required at runtime.
 
 This is an independently developed, free and open-source project, not an official or university-endorsed product or an official Blackboard product. Students call CUHK-Shenzhen “龙大”, short for the informal nickname “龙岗大学” (**Longgang University, LGU**), because the campus is in Longgang. This is not the university's official name.
+
+The features, requirements, and detailed usage below primarily describe the **macOS app**. Windows users should start with **[Windows installation and first use](#windows-install-en)**; see the [Windows guide][windows-source-guide] for platform differences.
 
 ### Features
 
@@ -264,17 +321,25 @@ This is an independently developed, free and open-source project, not an officia
 
 The default display zone is **Shenzhen (UTC+8)**, using the standard `Asia/Shanghai` identifier internally. Hong Kong also uses UTC+8. Changing the city label or interface language does not shift stored deadline instants.
 
-### Installation
+<a id="mac-install-en"></a>
+
+### Mac installation
 
 #### Option 1: A release package
 
-If an app package is available on the repository's **Releases** page:
-
-1. Download `拾期.zip` for your Mac's architecture and extract it.
+1. Download the **[Mac 1.2.0 ZIP][mac-zip]** (Apple Silicon, macOS 13+) and double-click to extract it.
 2. Drag `拾期.app` into **Applications**.
 3. Open Shiqi from Applications, then connect Blackboard and enable notifications as described below.
 
-Check the signing status of the specific Release. Version 1.1.2 and default development builds use **ad-hoc signatures** without Apple notarization, so macOS may block their first launch. The release script supports Developer ID signing and notarization after valid certificates and credentials are configured; configuring a script does not notarize existing packages. The source repository ignores `dist/`; downloading its source ZIP does not include a compiled app.
+**The current Mac 1.2.0 package is ad-hoc signed, without Developer ID signing or Apple notarization.** If macOS says Apple cannot verify whether it contains malware on first launch:
+
+1. Click **Done** and keep the app.
+2. Open **System Settings → Privacy & Security**, then scroll to **Security**.
+3. Click **Open Anyway** beside the blocked Shiqi app, authenticate if prompted, and confirm **Open**.
+
+Proceed only if you trust the file and downloaded it from this project. You can check the ZIP with `shasum -a 256` against the [Mac SHA-256 file][mac-checksums]. Managed Macs may not offer an override; do not disable system-wide security protections. See [Apple's instructions](https://support.apple.com/en-us/102445).
+
+To update, quit Shiqi before replacing the app in Applications. Tasks and preferences are stored separately. See the [Mac installation guide][mac-install-guide] for the full instructions.
 
 #### Option 2: Build from source
 
@@ -302,7 +367,28 @@ The script invokes `swiftc` directly, downloads no third-party dependencies, and
 
 After installing full Xcode, Mac scripts still prefer available Command Line Tools; iOS scripts select Xcode separately. Set `DEVELOPER_DIR` explicitly to choose another toolchain.
 
-### First use: Connect Blackboard
+<a id="windows-install-en"></a>
+
+### Windows installation and first use (preview)
+
+1. Download the **[Windows x64 ZIP][windows-x64-zip]** for Intel/AMD PCs, or the **[Windows ARM64 ZIP][windows-arm64-zip]** for ARM PCs. Check **System type** in **Settings → System → About** if unsure.
+2. Right-click the ZIP and choose **Extract All**. Keep the complete `Shiqi` folder in a permanent user-owned location. Do not run it from inside the ZIP.
+3. Open **`Shiqi.exe`** inside the folder. Keep the DLLs and `Assets` alongside it; do not move just the EXE. You can create a shortcut to the EXE.
+4. The .NET runtime is included. No separate .NET, Python, Node.js, or administrator access is needed.
+
+**The Windows packages are not code-signed.** If an unknown-publisher or SmartScreen warning appears, verify the source and the [Windows SHA-256 file][windows-checksums] first; in PowerShell, use `Get-FileHash .\downloaded-file.zip -Algorithm SHA256`. Only if you trust the file and Windows offers the option, choose **More info → Run anyway**. Managed computers may disallow this; do not disable Defender or system-wide security protections.
+
+Connect and check reminders:
+
+1. Choose **Connection → Open Blackboard**, sign in using your own browser, open the global **Calendar**, and choose **Get External Calendar Link / Share Calendar**. Copy the complete personal calendar sharing URL.
+2. Paste it into Shiqi and choose **Connect & sync**. Check task dates, exact times, and **Shenzhen (UTC+8)**. Keep the private access token in the sharing URL out of public posts.
+3. Open **Settings**, choose Chinese or English and your reminder preferences, then click **Save settings**. Use **Send test notification** to check alerts; Windows notification settings and Do Not Disturb can suppress them.
+
+**Windows reminders require the app to keep running.** Closing the window keeps it in the system tray; click the tray icon to reopen, or right-click to quit. Quit, shutdown, or sleep can prevent timely alerts; on resume, only reminders due within the last five minutes are caught up. **Start at Windows sign-in** is off by default.
+
+Apple Reminders sync is unavailable on Windows. Local tasks and completion states do not automatically sync between Mac and Windows. To update, quit from the tray before replacing the complete app folder; data stays in `%LOCALAPPDATA%\Shiqi`. See the [Windows installation guide][windows-install-guide] and [Windows source guide][windows-source-guide] for more usage, removal, and real-device testing steps.
+
+### First use: Connect Blackboard (macOS)
 
 1. Click **Connect Blackboard**. Sign in inside the app, or choose **Open Blackboard in your browser**.
 2. Sign in with your university account and open the **global Calendar**.
@@ -453,3 +539,14 @@ The Hardened Runtime EventKit resource entitlement preserves optional Reminders 
 ### License and branding
 
 Project code, original icons, and documentation are licensed under the [MIT License](LICENSE). Version 1.1.2 removes the university emblem, official wordmark, and related images, using Shiqi’s own calendar icon. See [Resources/Branding.md](Resources/Branding.md) for naming, assets, and independent-project disclosures.
+
+[mac-release]: https://github.com/TimZ21/LGU_DDL_Reminder/releases/tag/v1.2.0
+[mac-zip]: https://github.com/TimZ21/LGU_DDL_Reminder/releases/download/v1.2.0/Shiqi-1.2.0-macOS-arm64-unnotarized.zip
+[mac-install-guide]: https://github.com/TimZ21/LGU_DDL_Reminder/releases/download/v1.2.0/INSTALL.txt
+[mac-checksums]: https://github.com/TimZ21/LGU_DDL_Reminder/releases/download/v1.2.0/SHA256SUMS.txt
+[windows-release]: https://github.com/TimZ21/LGU_DDL_Reminder/releases/tag/v1.2.0-windows-preview.1
+[windows-x64-zip]: https://github.com/TimZ21/LGU_DDL_Reminder/releases/download/v1.2.0-windows-preview.1/Shiqi-1.2.0-windows-preview.1-win-x64-unsigned.zip
+[windows-arm64-zip]: https://github.com/TimZ21/LGU_DDL_Reminder/releases/download/v1.2.0-windows-preview.1/Shiqi-1.2.0-windows-preview.1-win-arm64-unsigned.zip
+[windows-install-guide]: https://github.com/TimZ21/LGU_DDL_Reminder/releases/download/v1.2.0-windows-preview.1/INSTALL-Windows-zh-en.txt
+[windows-checksums]: https://github.com/TimZ21/LGU_DDL_Reminder/releases/download/v1.2.0-windows-preview.1/SHA256SUMS-Windows.txt
+[windows-source-guide]: https://github.com/TimZ21/LGU_DDL_Reminder/blob/v1.2.0-windows-preview.1/windows/README.md
